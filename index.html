@@ -110,7 +110,7 @@
                         <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
                         <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Imagem</th>
                         <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome do Item</th>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantidade</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status / Qtd.</th>
                         <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Última Alteração</th>
                         <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data/Hora</th>
                         <th class="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
@@ -129,20 +129,29 @@
             <h2 id="modalTitle" class="text-2xl font-bold mb-4">Adicionar Novo Item</h2>
             <form id="itemForm">
                 <input type="hidden" id="originalItemId">
-                <div class="mb-4">
-                    <label for="itemId" class="block text-sm font-medium text-gray-700">ID do Item</label>
-                    <input type="text" id="itemId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="itemType" class="block text-sm font-medium text-gray-700">Tipo de Item</label>
+                        <select id="itemType" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="consumivel">Consumível</option>
+                            <option value="ferramenta">Ferramenta</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="itemId" class="block text-sm font-medium text-gray-700">ID do Item</label>
+                        <input type="text" id="itemId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                    </div>
                 </div>
                 <div class="mb-4">
                     <label for="itemName" class="block text-sm font-medium text-gray-700">Nome do Item</label>
-                    <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                 </div>
                 <div class="mb-4">
                     <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
-                    <input type="number" id="itemQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required min="0">
+                    <input type="number" id="itemQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="0">
                 </div>
                 <div class="mb-4">
-                    <label for="itemImage" class="block text-sm font-medium text-gray-700">Imagem do Item</label>
+                    <label class="block text-sm font-medium text-gray-700">Imagem do Item</label>
                     <div class="mt-1 flex items-center gap-2">
                         <input type="file" id="itemImage" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*">
                         <button type="button" id="searchWebBtn" class="btn btn-green flex-shrink-0"><i class="fas fa-search"></i></button>
@@ -175,7 +184,7 @@
         </div>
     </div>
 
-    <!-- Modal para Entrada/Saída de Estoque -->
+    <!-- Modal para Entrada/Saída de Estoque (Consumíveis) -->
     <div id="stockModal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h2 id="stockModalTitle" class="text-2xl font-bold mb-4">Registrar Movimentação</h2>
@@ -184,11 +193,33 @@
                 <input type="hidden" id="stockType">
                 <div class="mb-4">
                     <label for="stockQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
-                    <input type="number" id="stockQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required min="1">
+                    <input type="number" id="stockQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="1">
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" id="cancelStockBtn" class="btn btn-gray">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Empréstimo de Ferramenta -->
+    <div id="lendModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 id="lendModalTitle" class="text-2xl font-bold mb-4">Emprestar Ferramenta</h2>
+            <form id="lendForm">
+                <input type="hidden" id="lendItemId">
+                <div class="mb-4">
+                    <label for="lendTo" class="block text-sm font-medium text-gray-700">Emprestar para:</label>
+                    <input type="text" id="lendTo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label for="lendPeriod" class="block text-sm font-medium text-gray-700">Período do empréstimo:</label>
+                    <input type="text" id="lendPeriod" placeholder="Ex: 2 dias, até sexta-feira" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" id="cancelLendBtn" class="btn btn-gray">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Empréstimo</button>
                 </div>
             </form>
         </div>
@@ -317,6 +348,10 @@
             const stockForm = document.getElementById('stockForm');
             const cancelStockBtn = document.getElementById('cancelStockBtn');
 
+            const lendModal = document.getElementById('lendModal');
+            const lendForm = document.getElementById('lendForm');
+            const cancelLendBtn = document.getElementById('cancelLendBtn');
+
             const historyModal = document.getElementById('historyModal');
             const historyItemName = document.getElementById('historyItemName');
             const historyLogBody = document.getElementById('historyLogBody');
@@ -422,16 +457,29 @@
                 }
                 filteredItems.forEach(item => {
                     const row = document.createElement('tr');
-                    row.className = `border-b hover:bg-gray-100 ${item.quantity === 0 ? 'bg-gray-50 text-gray-400' : ''}`;
+                    row.className = `border-b hover:bg-gray-100 ${item.quantity === 0 && item.type === 'consumivel' ? 'bg-gray-50 text-gray-400' : ''}`;
                     const lastChange = item.history ? item.history[0] : null;
                     
                     const isAdminOrEditor = currentUser.role === 'admin' || currentUser.role === 'editor';
+                    
+                    let statusOrQtyCell = '';
+                    let actionButtons = `<button onclick="handleHistory('${item.id}')" class="text-purple-500 hover:text-purple-700" title="Ver Histórico"><i class="fas fa-history"></i></button>`;
 
-                    let actionButtons = `
-                        <button onclick="handleHistory('${item.id}')" class="text-purple-500 hover:text-purple-700" title="Ver Histórico"><i class="fas fa-history"></i></button>
-                        <button onclick="handleStock('${item.id}', 'Entrada')" class="text-green-500 hover:text-green-700" title="Registrar Entrada"><i class="fas fa-arrow-up"></i></button>
-                        <button onclick="handleStock('${item.id}', 'Saída')" class="text-yellow-500 hover:text-yellow-700" title="Registrar Saída"><i class="fas fa-arrow-down"></i></button>
-                    `;
+                    if (item.type === 'ferramenta') {
+                        if (item.status === 'emprestada') {
+                            statusOrQtyCell = `<div class="text-yellow-600 font-semibold">Emprestada</div><div class="text-xs text-gray-500">Para: ${item.lentTo}</div>`;
+                            actionButtons += `<button onclick="handleReturnTool('${item.id}')" class="text-green-500 hover:text-green-700" title="Devolver Ferramenta"><i class="fas fa-undo"></i></button>`;
+                        } else {
+                            statusOrQtyCell = `<div class="text-green-600 font-semibold">Disponível</div>`;
+                            actionButtons += `<button onclick="handleLendTool('${item.id}')" class="text-blue-500 hover:text-blue-700" title="Emprestar Ferramenta"><i class="fas fa-hand-holding-hand"></i></button>`;
+                        }
+                    } else { // Consumível
+                        statusOrQtyCell = `<div class="font-bold">${item.quantity}</div>`;
+                        actionButtons += `
+                            <button onclick="handleStock('${item.id}', 'Entrada')" class="text-green-500 hover:text-green-700" title="Registrar Entrada"><i class="fas fa-arrow-up"></i></button>
+                            <button onclick="handleStock('${item.id}', 'Saída')" class="text-yellow-500 hover:text-yellow-700" title="Registrar Saída"><i class="fas fa-arrow-down"></i></button>
+                        `;
+                    }
                     
                     if (isAdminOrEditor) {
                         actionButtons += `
@@ -445,8 +493,11 @@
                         <td class="py-3 px-4">
                             <img src="${item.imageData || 'https://placehold.co/60x60/e2e8f0/a0aec0?text=Sem+Img'}" alt="${item.name}" class="h-12 w-12 object-cover rounded-md">
                         </td>
-                        <td class="py-3 px-4 font-medium">${item.name}</td>
-                        <td class="py-3 px-4 font-bold">${item.quantity}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium">${item.name}</div>
+                            <div class="text-xs ${item.type === 'ferramenta' ? 'text-blue-500' : 'text-gray-500'}">${item.type.charAt(0).toUpperCase() + item.type.slice(1)}</div>
+                        </td>
+                        <td class="py-3 px-4">${statusOrQtyCell}</td>
                         <td class="py-3 px-4 text-sm">${lastChange ? `${lastChange.user} (${lastChange.action})` : 'N/A'}</td>
                         <td class="py-3 px-4 text-sm">${lastChange ? new Date(lastChange.timestamp).toLocaleString('pt-BR') : 'N/A'}</td>
                         <td class="py-3 px-4 text-center">
@@ -472,6 +523,7 @@
                     document.getElementById('itemId').value = item.id;
                     document.getElementById('itemName').value = item.name;
                     document.getElementById('itemQuantity').value = item.quantity;
+                    document.getElementById('itemType').value = item.type || 'consumivel';
                     if (item.imageData) {
                         imagePreview.src = item.imageData;
                         imagePreview.classList.remove('hidden');
@@ -487,6 +539,7 @@
                 const isUserRole = currentUser.role === 'user';
                 document.getElementById('itemId').disabled = isUserRole && !!item;
                 document.getElementById('itemName').disabled = isUserRole && !!item;
+                document.getElementById('itemType').disabled = isUserRole && !!item;
                 
                 itemModal.classList.remove('hidden');
             };
@@ -502,6 +555,14 @@
             };
 
             const closeStockModal = () => stockModal.classList.add('hidden');
+
+            const openLendModal = (item) => {
+                lendForm.reset();
+                document.getElementById('lendModalTitle').textContent = `Emprestar ${item.name}`;
+                document.getElementById('lendItemId').value = item.id;
+                lendModal.classList.remove('hidden');
+            };
+            const closeLendModal = () => lendModal.classList.add('hidden');
             
             const openUserManagementModal = () => {
                 adminRoleOption.classList.toggle('hidden', currentUser.username !== SUPER_ADMIN_USERNAME);
@@ -614,6 +675,7 @@
             addItemBtn.addEventListener('click', () => openItemModal());
             cancelItemBtn.addEventListener('click', closeItemModal);
             cancelStockBtn.addEventListener('click', closeStockModal);
+            cancelLendBtn.addEventListener('click', closeLendModal);
             closeHistoryBtn.addEventListener('click', closeHistoryModal);
             
             itemImageInput.addEventListener('change', (event) => {
@@ -635,6 +697,7 @@
                 const newId = document.getElementById('itemId').value;
                 const name = document.getElementById('itemName').value;
                 const quantity = parseInt(document.getElementById('itemQuantity').value);
+                const type = document.getElementById('itemType').value;
 
                 if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
                     alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
@@ -648,6 +711,7 @@
                         if (item.id !== newId) changes.push(`ID alterado de '${item.id}' para '${newId}'`);
                         if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
                         if (item.quantity !== quantity) changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
+                        if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
                         
                         if (changes.length > 0) {
                             addHistoryRecord(item, 'Edição', changes.join(', '));
@@ -656,12 +720,16 @@
                         item.id = newId;
                         item.name = name;
                         item.quantity = quantity;
+                        item.type = type;
                         item.imageData = imageBase64 || item.imageData;
                     }
                 } else { // Adicionar item
                     const newItem = {
-                        id: newId, name, quantity, imageData: imageBase64, history: [], isDeleted: false
+                        id: newId, name, quantity, type, imageData: imageBase64, history: [], isDeleted: false
                     };
+                    if (type === 'ferramenta') {
+                        newItem.status = 'disponivel';
+                    }
                     addHistoryRecord(newItem, 'Criação', `Item criado com ${quantity} unidades.`);
                     inventoryItems.push(newItem);
                 }
@@ -694,6 +762,25 @@
                 }
             });
 
+            lendForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('lendItemId').value;
+                const lentTo = document.getElementById('lendTo').value;
+                const lentPeriod = document.getElementById('lendPeriod').value;
+
+                const item = inventoryItems.find(i => i.id == id);
+                if (item) {
+                    item.status = 'emprestada';
+                    item.lentTo = lentTo;
+                    item.lentPeriod = lentPeriod;
+                    const details = `Emprestada para ${lentTo} (${lentPeriod}).`;
+                    addHistoryRecord(item, 'Empréstimo', details);
+                    saveInventory();
+                    renderTable();
+                    closeLendModal();
+                }
+            });
+
             // --- Eventos da Busca de Imagem na Web ---
             searchWebBtn.addEventListener('click', openWebSearchModal);
             cancelWebSearchBtn.addEventListener('click', closeWebSearchModal);
@@ -708,7 +795,6 @@
                 selectWebImageBtn.classList.add('hidden');
 
                 try {
-                    // Usamos um serviço que busca imagens aleatórias baseadas em um termo
                     const response = await fetch(`https://source.unsplash.com/400x400/?${encodeURIComponent(searchTerm)}`);
                     const blob = await response.blob();
                     
@@ -756,6 +842,24 @@
             window.handleStock = (id, type) => {
                 const item = inventoryItems.find(i => i.id === id);
                 if (item) openStockModal(item, type);
+            };
+
+            window.handleLendTool = (id) => {
+                const item = inventoryItems.find(i => i.id === id);
+                if (item) openLendModal(item);
+            };
+
+            window.handleReturnTool = (id) => {
+                const item = inventoryItems.find(i => i.id === id);
+                if (item && confirm(`Confirmar a devolução de ${item.name}?`)) {
+                    const details = `Devolvida por ${item.lentTo}.`;
+                    addHistoryRecord(item, 'Devolução', details);
+                    item.status = 'disponivel';
+                    delete item.lentTo;
+                    delete item.lentPeriod;
+                    saveInventory();
+                    renderTable();
+                }
             };
 
             window.handleHistory = (id) => {
@@ -828,10 +932,15 @@
                 const activeItems = inventoryItems.filter(item => !item.isDeleted);
                 const dataToExport = activeItems.map(item => {
                     const lastChange = item.history ? item.history[0] : null;
+                    let statusOrQty = item.type === 'ferramenta' 
+                        ? (item.status === 'emprestada' ? `Emprestada para ${item.lentTo}` : 'Disponível')
+                        : item.quantity;
+
                     return {
                         'ID': item.id,
                         'Nome': item.name,
-                        'Quantidade': item.quantity,
+                        'Tipo': item.type,
+                        'Status/Qtd': statusOrQty,
                         'Última Alteração Por': lastChange ? lastChange.user : '',
                         'Data/Hora': lastChange ? new Date(lastChange.timestamp).toLocaleString('pt-BR') : ''
                     }
