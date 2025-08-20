@@ -152,9 +152,8 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700">Imagem do Item</label>
-                    <div class="mt-1 flex items-center gap-2">
+                    <div class="mt-1">
                         <input type="file" id="itemImage" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*">
-                        <button type="button" id="searchWebBtn" class="btn btn-green flex-shrink-0"><i class="fas fa-search"></i></button>
                     </div>
                     <img id="imagePreview" src="" alt="Prévia da imagem" class="mt-2 rounded-md max-h-32 hidden"/>
                 </div>
@@ -163,24 +162,6 @@
                     <button type="submit" class="btn btn-primary">Salvar</button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Modal de Busca de Imagem na Web -->
-    <div id="webSearchModal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4">Buscar Imagem na Web</h2>
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="webSearchInput" placeholder="Ex: martelo, furadeira..." class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                <button id="performWebSearchBtn" class="btn btn-primary">Buscar</button>
-            </div>
-            <div id="webSearchResults" class="text-center min-h-[200px] flex items-center justify-center border-dashed border-2 rounded-lg">
-                <span class="text-gray-400">Digite um termo e clique em "Buscar"</span>
-            </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" id="cancelWebSearchBtn" class="btn btn-gray">Cancelar</button>
-                <button type="button" id="selectWebImageBtn" class="btn btn-primary hidden">Selecionar esta Imagem</button>
-            </div>
         </div>
     </div>
 
@@ -365,19 +346,9 @@
             const exportBtn = document.getElementById('exportBtn');
             const exportLogBtn = document.getElementById('exportLogBtn');
 
-            // --- Elementos do Modal de Busca na Web ---
-            const searchWebBtn = document.getElementById('searchWebBtn');
-            const webSearchModal = document.getElementById('webSearchModal');
-            const webSearchInput = document.getElementById('webSearchInput');
-            const performWebSearchBtn = document.getElementById('performWebSearchBtn');
-            const webSearchResults = document.getElementById('webSearchResults');
-            const cancelWebSearchBtn = document.getElementById('cancelWebSearchBtn');
-            const selectWebImageBtn = document.getElementById('selectWebImageBtn');
-
             // --- Estado da Aplicação ---
             let inventoryItems = [];
             let imageBase64 = null;
-            let webImageBase64 = null; // Armazena temporariamente a imagem da web
             let currentUser = null;
             const SUPER_ADMIN_USERNAME = 'GABRIELMAG';
 
@@ -616,15 +587,6 @@
             };
             const closeDeletedItemsModal = () => deletedItemsModal.classList.add('hidden');
 
-            const openWebSearchModal = () => {
-                webSearchInput.value = '';
-                webSearchResults.innerHTML = '<span class="text-gray-400">Digite um termo e clique em "Buscar"</span>';
-                selectWebImageBtn.classList.add('hidden');
-                webImageBase64 = null;
-                webSearchModal.classList.remove('hidden');
-            };
-            const closeWebSearchModal = () => webSearchModal.classList.add('hidden');
-
             // --- Manipuladores de Eventos ---
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -778,46 +740,6 @@
                     saveInventory();
                     renderTable();
                     closeLendModal();
-                }
-            });
-
-            // --- Eventos da Busca de Imagem na Web ---
-            searchWebBtn.addEventListener('click', openWebSearchModal);
-            cancelWebSearchBtn.addEventListener('click', closeWebSearchModal);
-
-            performWebSearchBtn.addEventListener('click', async () => {
-                const searchTerm = webSearchInput.value.trim();
-                if (!searchTerm) {
-                    alert('Por favor, digite um termo para a busca.');
-                    return;
-                }
-                webSearchResults.innerHTML = '<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>';
-                selectWebImageBtn.classList.add('hidden');
-
-                try {
-                    const response = await fetch(`https://source.unsplash.com/400x400/?${encodeURIComponent(searchTerm)}`);
-                    const blob = await response.blob();
-                    
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        webImageBase64 = reader.result;
-                        webSearchResults.innerHTML = `<img src="${webImageBase64}" class="max-h-64 rounded-lg mx-auto" alt="Resultado da busca para ${searchTerm}">`;
-                        selectWebImageBtn.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(blob);
-
-                } catch (error) {
-                    webSearchResults.innerHTML = '<span class="text-red-500">Erro ao buscar imagem. Tente novamente.</span>';
-                    console.error('Erro na busca de imagem:', error);
-                }
-            });
-
-            selectWebImageBtn.addEventListener('click', () => {
-                if (webImageBase64) {
-                    imageBase64 = webImageBase64;
-                    imagePreview.src = imageBase64;
-                    imagePreview.classList.remove('hidden');
-                    closeWebSearchModal();
                 }
             });
 
