@@ -419,7 +419,7 @@
                 inventoryTableBody.innerHTML = '';
                 const activeItems = inventoryItems.filter(item => !item.isDeleted);
                 const filteredItems = activeItems.filter(item => 
-                    item.name.toLowerCase().includes(filter.toLowerCase())
+                    item && typeof item.name === 'string' && item.name.toLowerCase().includes(filter.toLowerCase())
                 );
 
                 if (filteredItems.length === 0) {
@@ -466,7 +466,7 @@
                         </td>
                         <td class="py-3 px-4">
                             <div class="font-medium">${item.name}</div>
-                            <div class="text-xs ${item.type === 'ferramenta' ? 'text-blue-500' : 'text-gray-500'}">${item.type.charAt(0).toUpperCase() + item.type.slice(1)}</div>
+                            <div class="text-xs ${item.type === 'ferramenta' ? 'text-blue-500' : 'text-gray-500'}">${item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'N/D'}</div>
                         </td>
                         <td class="py-3 px-4">${statusOrQtyCell}</td>
                         <td class="py-3 px-4 text-sm">${lastChange ? `${lastChange.user} (${lastChange.action})` : 'N/A'}</td>
