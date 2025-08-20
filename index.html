@@ -147,10 +147,6 @@
                     <label for="itemName" class="block text-sm font-medium text-gray-700">Nome do Item</label>
                     <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                 </div>
-                <div id="chassiFieldContainer" class="mb-4 hidden">
-                    <label for="itemChassi" class="block text-sm font-medium text-gray-700">Chassi/Cód. Equipamento</label>
-                    <input type="text" id="itemChassi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
                 <div class="mb-4">
                     <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
                     <input type="number" id="itemQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="0">
@@ -189,43 +185,17 @@
         </div>
     </div>
 
-    <!-- Modal para Empréstimo de Ferramenta -->
-    <div id="lendModal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h2 id="lendModalTitle" class="text-2xl font-bold mb-4">Emprestar Ferramenta</h2>
-            <form id="lendForm">
-                <input type="hidden" id="lendItemId">
-                <div class="mb-4">
-                    <label for="lendTo" class="block text-sm font-medium text-gray-700">Emprestar para:</label>
-                    <input type="text" id="lendTo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
-                </div>
-                <div class="mb-4">
-                    <label for="lendPeriod" class="block text-sm font-medium text-gray-700">Período do empréstimo:</label>
-                    <input type="text" id="lendPeriod" placeholder="Ex: 2 dias, até sexta-feira" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" id="cancelLendBtn" class="btn btn-gray">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Confirmar Empréstimo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal para Atribuição de Item -->
-    <div id="assignModal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h2 id="assignModalTitle" class="text-2xl font-bold mb-4">Atribuir Item</h2>
-            <form id="assignForm">
-                <input type="hidden" id="assignItemId">
-                <div class="mb-4">
-                    <label for="assignTo" class="block text-sm font-medium text-gray-700">Atribuir a:</label>
-                    <input type="text" id="assignTo" placeholder="Ex: Frota 101, Caminhão XYZ-1234" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" id="cancelAssignBtn" class="btn btn-gray">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Confirmar Atribuição</button>
-                </div>
-            </form>
+    <!-- Modal de Gerenciamento de Unidades (Ferramentas e Atribuídos) -->
+    <div id="unitManagementModal" class="modal-backdrop hidden">
+        <div class="modal-content large-modal-content">
+            <h2 id="unitManagementTitle" class="text-2xl font-bold mb-2">Gerenciar Unidades</h2>
+            <p class="mb-4 text-gray-600"><strong>Item:</strong> <span id="unitManagementItemName"></span></p>
+            <div id="unitList" class="max-h-96 overflow-y-auto space-y-2">
+                <!-- Lista de unidades será preenchida aqui -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="closeUnitManagementBtn" class="btn btn-gray">Fechar</button>
+            </div>
         </div>
     </div>
     
@@ -344,7 +314,6 @@
             const modalTitle = document.getElementById('modalTitle');
             const itemForm = document.getElementById('itemForm');
             const itemTypeSelect = document.getElementById('itemType');
-            const chassiFieldContainer = document.getElementById('chassiFieldContainer');
             const cancelItemBtn = document.getElementById('cancelItemBtn');
             const imagePreview = document.getElementById('imagePreview');
             const itemImageInput = document.getElementById('itemImage');
@@ -354,13 +323,11 @@
             const stockForm = document.getElementById('stockForm');
             const cancelStockBtn = document.getElementById('cancelStockBtn');
 
-            const lendModal = document.getElementById('lendModal');
-            const lendForm = document.getElementById('lendForm');
-            const cancelLendBtn = document.getElementById('cancelLendBtn');
-
-            const assignModal = document.getElementById('assignModal');
-            const assignForm = document.getElementById('assignForm');
-            const cancelAssignBtn = document.getElementById('cancelAssignBtn');
+            const unitManagementModal = document.getElementById('unitManagementModal');
+            const unitManagementTitle = document.getElementById('unitManagementTitle');
+            const unitManagementItemName = document.getElementById('unitManagementItemName');
+            const unitList = document.getElementById('unitList');
+            const closeUnitManagementBtn = document.getElementById('closeUnitManagementBtn');
 
             const historyModal = document.getElementById('historyModal');
             const historyItemName = document.getElementById('historyItemName');
@@ -428,6 +395,24 @@
             
             const loadInventory = () => {
                 inventoryItems = getInventory();
+                let dataWasMigrated = false;
+                // **INÍCIO DA CORREÇÃO**
+                // Garante que itens antigos sejam compatíveis com o novo sistema de unidades
+                inventoryItems.forEach(item => {
+                    if ((item.type === 'ferramenta' || item.type === 'atribuido') && !Array.isArray(item.units)) {
+                        console.log(`Migrando item: ${item.name}`);
+                        item.units = [];
+                        for (let i = 1; i <= item.quantity; i++) {
+                            item.units.push({ unitId: i, status: 'disponivel' });
+                        }
+                        dataWasMigrated = true;
+                    }
+                });
+
+                if (dataWasMigrated) {
+                    saveInventory(); // Salva os dados corrigidos
+                }
+                // **FIM DA CORREÇÃO**
                 renderTable();
             };
 
@@ -465,22 +450,11 @@
                     let statusOrQtyCell = '';
                     let actionButtons = `<button onclick="handleHistory('${item.id}')" class="text-purple-500 hover:text-purple-700" title="Ver Histórico"><i class="fas fa-history"></i></button>`;
 
-                    if (item.type === 'ferramenta') {
-                        if (item.status === 'emprestada') {
-                            statusOrQtyCell = `<div class="text-yellow-600 font-semibold">Emprestada</div><div class="text-xs text-gray-500">Para: ${item.lentTo}</div>`;
-                            actionButtons += `<button onclick="handleReturnTool('${item.id}')" class="text-green-500 hover:text-green-700" title="Devolver Ferramenta"><i class="fas fa-undo"></i></button>`;
-                        } else {
-                            statusOrQtyCell = `<div class="text-green-600 font-semibold">Disponível</div>`;
-                            actionButtons += `<button onclick="handleLendTool('${item.id}')" class="text-blue-500 hover:text-blue-700" title="Emprestar Ferramenta"><i class="fas fa-hand-holding-hand"></i></button>`;
-                        }
-                    } else if (item.type === 'atribuido') {
-                        if (item.status === 'atribuido') {
-                            statusOrQtyCell = `<div class="text-indigo-600 font-semibold">Atribuído</div><div class="text-xs text-gray-500">Para: ${item.assignedTo}</div>`;
-                            actionButtons += `<button onclick="handleUnassignItem('${item.id}')" class="text-red-500 hover:text-red-700" title="Remover Atribuição"><i class="fas fa-unlink"></i></button>`;
-                        } else {
-                            statusOrQtyCell = `<div class="text-green-600 font-semibold">Disponível</div>`;
-                            actionButtons += `<button onclick="handleAssignItem('${item.id}')" class="text-indigo-500 hover:text-indigo-700" title="Atribuir Item"><i class="fas fa-link"></i></button>`;
-                        }
+                    if (item.type === 'ferramenta' || item.type === 'atribuido') {
+                        const units = item.units || [];
+                        const inUseCount = units.filter(u => u.status !== 'disponivel').length;
+                        statusOrQtyCell = `<div class="font-semibold">${inUseCount} de ${item.quantity} em uso</div>`;
+                        actionButtons += `<button onclick="handleManageUnits('${item.id}')" class="text-indigo-500 hover:text-indigo-700" title="Gerenciar Unidades"><i class="fas fa-tasks"></i></button>`;
                     } else { // Consumível
                         statusOrQtyCell = `<div class="font-bold">${item.quantity}</div>`;
                         actionButtons += `
@@ -524,7 +498,6 @@
                 imageBase64 = null;
                 imagePreview.classList.add('hidden');
                 imagePreview.src = '';
-                chassiFieldContainer.classList.add('hidden');
 
                 if (item) { // Modo Edição
                     modalTitle.textContent = 'Editar Item';
@@ -533,10 +506,6 @@
                     document.getElementById('itemName').value = item.name;
                     document.getElementById('itemQuantity').value = item.quantity;
                     document.getElementById('itemType').value = item.type || 'consumivel';
-                    if (item.type === 'atribuido') {
-                        chassiFieldContainer.classList.remove('hidden');
-                        document.getElementById('itemChassi').value = item.chassi || '';
-                    }
                     if (item.imageData) {
                         imagePreview.src = item.imageData;
                         imagePreview.classList.remove('hidden');
@@ -566,24 +535,46 @@
                 document.getElementById('stockType').value = type;
                 stockModal.classList.remove('hidden');
             };
-
             const closeStockModal = () => stockModal.classList.add('hidden');
 
-            const openLendModal = (item) => {
-                lendForm.reset();
-                document.getElementById('lendModalTitle').textContent = `Emprestar ${item.name}`;
-                document.getElementById('lendItemId').value = item.id;
-                lendModal.classList.remove('hidden');
+            const openUnitManagementModal = (item) => {
+                const isTool = item.type === 'ferramenta';
+                unitManagementTitle.textContent = isTool ? 'Gerenciar Empréstimos' : 'Gerenciar Atribuições';
+                unitManagementItemName.textContent = `${item.name} (ID: ${item.id})`;
+                unitList.innerHTML = '';
+                item.units.forEach(unit => {
+                    const unitDiv = document.createElement('div');
+                    unitDiv.className = 'flex justify-between items-center p-2 border rounded-md';
+                    let statusHTML = '';
+                    if (unit.status !== 'disponivel') {
+                        const target = isTool ? unit.lentTo : unit.assignedTo;
+                        const period = isTool && unit.lentPeriod ? `(${unit.lentPeriod})` : '';
+                        const actionText = isTool ? 'Devolver' : 'Remover';
+                        const actionFunc = isTool ? 'handleReturnUnit' : 'handleUnassignUnit';
+                        statusHTML = `
+                            <div>
+                                <p class="font-semibold">Unidade ${unit.unitId}</p>
+                                <p class="text-sm text-yellow-600">${isTool ? 'Emprestado para' : 'Atribuído a'}: ${target} ${period}</p>
+                            </div>
+                            <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-red text-xs">${actionText}</button>
+                        `;
+                    } else {
+                        const actionText = isTool ? 'Emprestar' : 'Atribuir';
+                        const actionFunc = isTool ? 'handleLendUnit' : 'handleAssignUnit';
+                        statusHTML = `
+                            <div>
+                                <p class="font-semibold">Unidade ${unit.unitId}</p>
+                                <p class="text-sm text-green-600">Disponível</p>
+                            </div>
+                            <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-primary text-xs">${actionText}</button>
+                        `;
+                    }
+                    unitDiv.innerHTML = statusHTML;
+                    unitList.appendChild(unitDiv);
+                });
+                unitManagementModal.classList.remove('hidden');
             };
-            const closeLendModal = () => lendModal.classList.add('hidden');
-
-            const openAssignModal = (item) => {
-                assignForm.reset();
-                document.getElementById('assignModalTitle').textContent = `Atribuir ${item.name}`;
-                document.getElementById('assignItemId').value = item.id;
-                assignModal.classList.remove('hidden');
-            };
-            const closeAssignModal = () => assignModal.classList.add('hidden');
+            const closeUnitManagementModal = () => unitManagementModal.classList.add('hidden');
             
             const openUserManagementModal = () => {
                 adminRoleOption.classList.toggle('hidden', currentUser.username !== SUPER_ADMIN_USERNAME);
@@ -687,13 +678,8 @@
             addItemBtn.addEventListener('click', () => openItemModal());
             cancelItemBtn.addEventListener('click', closeItemModal);
             cancelStockBtn.addEventListener('click', closeStockModal);
-            cancelLendBtn.addEventListener('click', closeLendModal);
-            cancelAssignBtn.addEventListener('click', closeAssignModal);
+            closeUnitManagementBtn.addEventListener('click', closeUnitManagementModal);
             closeHistoryBtn.addEventListener('click', closeHistoryModal);
-            
-            itemTypeSelect.addEventListener('change', (e) => {
-                chassiFieldContainer.classList.toggle('hidden', e.target.value !== 'atribuido');
-            });
 
             itemImageInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
@@ -715,7 +701,6 @@
                 const name = document.getElementById('itemName').value;
                 const quantity = parseInt(document.getElementById('itemQuantity').value);
                 const type = document.getElementById('itemType').value;
-                const chassi = document.getElementById('itemChassi').value;
 
                 if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
                     alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
@@ -728,9 +713,35 @@
                         let changes = [];
                         if (item.id !== newId) changes.push(`ID alterado de '${item.id}' para '${newId}'`);
                         if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
-                        if (item.quantity !== quantity) changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
                         if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
-                        if (item.chassi !== chassi) changes.push(`Chassi/Cód. alterado para '${chassi}'`);
+                        
+                        if ((item.type === 'atribuido' || item.type === 'ferramenta') && item.quantity !== quantity) {
+                            const oldQty = item.quantity;
+                            const inUseUnits = item.units.filter(u => u.status !== 'disponivel').length;
+                            if (quantity < inUseUnits) {
+                                alert(`Não é possível reduzir a quantidade para ${quantity}, pois existem ${inUseUnits} unidades atualmente em uso.`);
+                                return;
+                            }
+                            changes.push(`Quantidade alterada de '${oldQty}' para '${quantity}'`);
+                            // Sincroniza o array de unidades
+                            const diff = quantity - item.units.length;
+                            if (diff > 0) { // Adicionar unidades
+                                for (let i = 0; i < diff; i++) {
+                                    item.units.push({ unitId: item.units.length + 1, status: 'disponivel' });
+                                }
+                            } else if (diff < 0) { // Remover unidades
+                                let toRemove = Math.abs(diff);
+                                item.units = item.units.filter(unit => {
+                                    if (unit.status === 'disponivel' && toRemove > 0) {
+                                        toRemove--;
+                                        return false;
+                                    }
+                                    return true;
+                                });
+                            }
+                        } else if (item.quantity !== quantity) {
+                             changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
+                        }
                         
                         if (changes.length > 0) {
                             addHistoryRecord(item, 'Edição', changes.join(', '));
@@ -740,7 +751,6 @@
                         item.name = name;
                         item.quantity = quantity;
                         item.type = type;
-                        if (type === 'atribuido') item.chassi = chassi;
                         item.imageData = imageBase64 || item.imageData;
                     }
                 } else { // Adicionar item
@@ -748,10 +758,10 @@
                         id: newId, name, quantity, type, imageData: imageBase64, history: [], isDeleted: false
                     };
                     if (type === 'ferramenta' || type === 'atribuido') {
-                        newItem.status = 'disponivel';
-                    }
-                    if (type === 'atribuido') {
-                        newItem.chassi = chassi;
+                        newItem.units = [];
+                        for (let i = 1; i <= quantity; i++) {
+                            newItem.units.push({ unitId: i, status: 'disponivel' });
+                        }
                     }
                     addHistoryRecord(newItem, 'Criação', `Item criado com ${quantity} unidades.`);
                     inventoryItems.push(newItem);
@@ -785,42 +795,6 @@
                 }
             });
 
-            lendForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const id = document.getElementById('lendItemId').value;
-                const lentTo = document.getElementById('lendTo').value;
-                const lentPeriod = document.getElementById('lendPeriod').value;
-
-                const item = inventoryItems.find(i => i.id == id);
-                if (item) {
-                    item.status = 'emprestada';
-                    item.lentTo = lentTo;
-                    item.lentPeriod = lentPeriod;
-                    const details = `Emprestada para ${lentTo} (${lentPeriod}).`;
-                    addHistoryRecord(item, 'Empréstimo', details);
-                    saveInventory();
-                    renderTable();
-                    closeLendModal();
-                }
-            });
-
-            assignForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const id = document.getElementById('assignItemId').value;
-                const assignedTo = document.getElementById('assignTo').value;
-
-                const item = inventoryItems.find(i => i.id == id);
-                if (item) {
-                    item.status = 'atribuido';
-                    item.assignedTo = assignedTo;
-                    const details = `Atribuído a ${assignedTo}.`;
-                    addHistoryRecord(item, 'Atribuição', details);
-                    saveInventory();
-                    renderTable();
-                    closeAssignModal();
-                }
-            });
-
             // --- Funções Globais para Ações da Tabela ---
             window.handleEdit = (id) => {
                 const item = inventoryItems.find(i => i.id === id);
@@ -844,38 +818,67 @@
                 if (item) openStockModal(item, type);
             };
 
-            window.handleLendTool = (id) => {
+            window.handleManageUnits = (id) => {
                 const item = inventoryItems.find(i => i.id === id);
-                if (item) openLendModal(item);
+                if(item) openUnitManagementModal(item);
             };
 
-            window.handleReturnTool = (id) => {
-                const item = inventoryItems.find(i => i.id === id);
-                if (item && confirm(`Confirmar a devolução de ${item.name}?`)) {
-                    const details = `Devolvida por ${item.lentTo}.`;
-                    addHistoryRecord(item, 'Devolução', details);
-                    item.status = 'disponivel';
-                    delete item.lentTo;
-                    delete item.lentPeriod;
-                    saveInventory();
-                    renderTable();
+            window.handleLendUnit = (itemId, unitId) => {
+                const lentTo = prompt(`Emprestar a Unidade ${unitId} para:`);
+                if (lentTo) {
+                    const lentPeriod = prompt(`Período do empréstimo:`);
+                    if (lentPeriod !== null) {
+                        const item = inventoryItems.find(i => i.id === itemId);
+                        const unit = item.units.find(u => u.unitId === unitId);
+                        unit.status = 'emprestada';
+                        unit.lentTo = lentTo;
+                        unit.lentPeriod = lentPeriod;
+                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${lentTo} (${lentPeriod}).`);
+                        saveInventory();
+                        renderTable();
+                        openUnitManagementModal(item);
+                    }
                 }
             };
 
-            window.handleAssignItem = (id) => {
-                const item = inventoryItems.find(i => i.id === id);
-                if (item) openAssignModal(item);
-            };
-
-            window.handleUnassignItem = (id) => {
-                const item = inventoryItems.find(i => i.id === id);
-                if (item && confirm(`Confirmar a remoção da atribuição de ${item.name}?`)) {
-                    const details = `Atribuição removida de ${item.assignedTo}.`;
-                    addHistoryRecord(item, 'Remoção de Atribuição', details);
-                    item.status = 'disponivel';
-                    delete item.assignedTo;
+            window.handleReturnUnit = (itemId, unitId) => {
+                const item = inventoryItems.find(i => i.id === itemId);
+                const unit = item.units.find(u => u.unitId === unitId);
+                if (confirm(`Confirmar a devolução da Unidade ${unitId}?`)) {
+                    addHistoryRecord(item, 'Devolução', `Unidade ${unitId} devolvida por ${unit.lentTo}.`);
+                    unit.status = 'disponivel';
+                    delete unit.lentTo;
+                    delete unit.lentPeriod;
                     saveInventory();
                     renderTable();
+                    openUnitManagementModal(item);
+                }
+            };
+
+            window.handleAssignUnit = (itemId, unitId) => {
+                const assignedTo = prompt(`Atribuir a Unidade ${unitId} para:`);
+                if (assignedTo) {
+                    const item = inventoryItems.find(i => i.id === itemId);
+                    const unit = item.units.find(u => u.unitId === unitId);
+                    unit.status = 'atribuido';
+                    unit.assignedTo = assignedTo;
+                    addHistoryRecord(item, 'Atribuição', `Unidade ${unitId} atribuída a ${assignedTo}.`);
+                    saveInventory();
+                    renderTable();
+                    openUnitManagementModal(item);
+                }
+            };
+
+            window.handleUnassignUnit = (itemId, unitId) => {
+                const item = inventoryItems.find(i => i.id === itemId);
+                const unit = item.units.find(u => u.unitId === unitId);
+                if (confirm(`Remover atribuição da Unidade ${unitId} de ${unit.assignedTo}?`)) {
+                    addHistoryRecord(item, 'Remoção de Atribuição', `Atribuição da Unidade ${unitId} removida de ${unit.assignedTo}.`);
+                    unit.status = 'disponivel';
+                    delete unit.assignedTo;
+                    saveInventory();
+                    renderTable();
+                    openUnitManagementModal(item);
                 }
             };
 
@@ -947,32 +950,64 @@
             // --- Lógica de Exportação ---
             exportBtn.addEventListener('click', () => {
                 const activeItems = inventoryItems.filter(item => !item.isDeleted);
-                const dataToExport = activeItems.map(item => {
+                
+                const mainData = [];
+                const loansData = [];
+                const assignmentsData = [];
+
+                activeItems.forEach(item => {
                     const lastChange = item.history ? item.history[0] : null;
                     let statusOrQty = '';
-                    if (item.type === 'ferramenta') {
-                        statusOrQty = item.status === 'emprestada' ? `Emprestada para ${item.lentTo}` : 'Disponível';
-                    } else if (item.type === 'atribuido') {
-                        statusOrQty = item.status === 'atribuido' ? `Atribuído a ${item.assignedTo}` : 'Disponível';
+
+                    if (item.type === 'ferramenta' || item.type === 'atribuido') {
+                        const inUseCount = item.units ? item.units.filter(u => u.status !== 'disponivel').length : 0;
+                        statusOrQty = `${inUseCount} de ${item.quantity} em uso`;
+                        
+                        if (item.units) {
+                            item.units.forEach(unit => {
+                                if (unit.status !== 'disponivel') {
+                                    const record = {
+                                        'ID do Item': item.id,
+                                        'Nome do Item': item.name,
+                                        'Unidade': unit.unitId,
+                                        'Status': item.type === 'ferramenta' ? `Emprestada para ${unit.lentTo} (${unit.lentPeriod})` : `Atribuído a ${unit.assignedTo}`
+                                    };
+                                    if (item.type === 'ferramenta') {
+                                        loansData.push(record);
+                                    } else {
+                                        assignmentsData.push(record);
+                                    }
+                                }
+                            });
+                        }
                     } else {
                         statusOrQty = item.quantity;
                     }
 
-                    return {
+                    mainData.push({
                         'ID': item.id,
                         'Nome': item.name,
                         'Tipo': item.type,
-                        'Chassi/Cód.': item.chassi || '',
                         'Status/Qtd': statusOrQty,
                         'Última Alteração Por': lastChange ? lastChange.user : '',
                         'Data/Hora': lastChange ? new Date(lastChange.timestamp).toLocaleString('pt-BR') : ''
-                    }
+                    });
                 });
 
-                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
-                XLSX.writeFile(workbook, "inventario_ativo.xlsx");
+                const wb = XLSX.utils.book_new();
+                const wsMain = XLSX.utils.json_to_sheet(mainData);
+                XLSX.utils.book_append_sheet(wb, wsMain, "Inventário Geral");
+
+                if (loansData.length > 0) {
+                    const wsLoans = XLSX.utils.json_to_sheet(loansData);
+                    XLSX.utils.book_append_sheet(wb, wsLoans, "Empréstimos Ativos");
+                }
+                if (assignmentsData.length > 0) {
+                    const wsAssignments = XLSX.utils.json_to_sheet(assignmentsData);
+                    XLSX.utils.book_append_sheet(wb, wsAssignments, "Atribuições Ativas");
+                }
+                
+                XLSX.writeFile(wb, "inventario_detalhado.xlsx");
             });
             
             exportLogBtn.addEventListener('click', () => {
