@@ -27,16 +27,17 @@
             justify-content: center;
             align-items: center;
             z-index: 50;
-            overflow-y: auto; /* Permite rolagem se o modal for grande */
+            overflow-y: auto;
+            padding: 1rem;
         }
         .modal-content, .login-content {
             background-color: white;
             padding: 2rem;
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            width: 90%;
+            width: 100%;
             max-width: 500px;
-            margin: 2rem 0;
+            margin: auto;
         }
         .large-modal-content {
             max-width: 800px;
@@ -55,7 +56,7 @@
         .hidden { display: none; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-2 sm:p-4 md:p-8">
 
     <!-- Tela de Login -->
     <div id="loginBackdrop" class="login-backdrop">
@@ -76,17 +77,22 @@
     </div>
 
     <!-- Conteúdo Principal da Aplicação (inicialmente oculto) -->
-    <div id="appContainer" class="hidden max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6">
+    <div id="appContainer" class="hidden max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
         <header class="mb-6 border-b pb-4 flex flex-wrap justify-between items-center gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">Sistema de Controle de Inventário</h1>
-                <p class="text-gray-500">Logado como: <span id="loggedInUser" class="font-semibold"></span> (<span id="userRole" class="font-semibold"></span>)</p>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Sistema de Controle de Inventário</h1>
+                <p class="text-sm text-gray-500">Logado como: <span id="loggedInUser" class="font-semibold"></span> (<span id="userRole" class="font-semibold"></span>)</p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="notificationsBtn" class="relative text-gray-600 hover:text-blue-500 focus:outline-none">
+                    <i class="fas fa-bell fa-lg"></i>
+                    <span id="notificationBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </button>
                 <button id="clearLogBtn" class="btn btn-red admin-only"><i class="fas fa-eraser mr-2"></i>Limpar Log</button>
                 <button id="exportLogBtn" class="btn btn-purple admin-only"><i class="fas fa-file-medical-alt mr-2"></i>Exportar Log</button>
                 <button id="viewDeletedBtn" class="btn btn-gray admin-editor-only"><i class="fas fa-trash-restore mr-2"></i>Ver Excluídos</button>
-                <button id="manageUsersBtn" class="btn btn-yellow admin-editor-only"><i class="fas fa-users-cog mr-2"></i>Gerenciar Usuários</button>
+                <button id="manageFleetsBtn" class="btn btn-primary admin-editor-only"><i class="fas fa-truck mr-2"></i>Frotas</button>
+                <button id="manageUsersBtn" class="btn btn-yellow admin-editor-only"><i class="fas fa-users-cog mr-2"></i>Usuários</button>
                 <button id="logoutBtn" class="btn btn-red"><i class="fas fa-sign-out-alt mr-2"></i>Sair</button>
             </div>
         </header>
@@ -147,6 +153,10 @@
                 <div class="mb-4">
                     <label for="itemName" class="block text-sm font-medium text-gray-700">Nome do Item</label>
                     <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div id="itemClassContainer" class="mb-4 hidden">
+                    <label for="itemClass" class="block text-sm font-medium text-gray-700">Classe do Item</label>
+                    <input type="text" id="itemClass" placeholder="Ex: Antena GPS, Monitor" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="mb-4">
                     <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
@@ -212,11 +222,19 @@
                     <input type="text" id="assignUnitTo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                 </div>
                 <div class="mb-4" id="assignUnitPeriodContainer">
-                    <label for="assignUnitPeriod" class="block text-sm font-medium text-gray-700">Período:</label>
-                    <input type="text" id="assignUnitPeriod" placeholder="Ex: 2 dias, até sexta-feira" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="flex-grow">
+                            <label for="assignUnitPeriod" class="block text-sm font-medium text-gray-700">Prazo (dias)</label>
+                            <input type="number" id="assignUnitPeriod" min="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="mt-6">
+                            <input type="checkbox" id="assignUnitIndefinite" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="assignUnitIndefinite" class="ml-2 text-sm text-gray-900">Indefinido</label>
+                        </div>
+                    </div>
                 </div>
                 <div class="mb-4" id="assignUnitIdentifierContainer">
-                    <label for="assignUnitIdentifier" class="block text-sm font-medium text-gray-700">Identificador da Unidade (Nº de Série, etc.):</label>
+                    <label for="assignUnitIdentifier" class="block text-sm font-medium text-gray-700">Nº de Série / Cód. da Unidade</label>
                     <input type="text" id="assignUnitIdentifier" placeholder="Ex: SN-12345" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
@@ -224,6 +242,43 @@
                     <button type="submit" class="btn btn-primary">Confirmar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de Gerenciamento de Frotas -->
+    <div id="fleetManagementModal" class="modal-backdrop hidden">
+        <div class="modal-content large-modal-content">
+            <h2 class="text-2xl font-bold mb-4">Gerenciar Frotas</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <form id="fleetForm">
+                        <input type="hidden" id="originalChassi">
+                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Cadastrar/Editar Frota</h3>
+                        <div class="mb-4 mt-4">
+                            <label for="fleetName" class="block text-sm font-medium text-gray-700">Nome da Frota</label>
+                            <input type="text" id="fleetName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="fleetModel" class="block text-sm font-medium text-gray-700">Modelo</label>
+                            <input type="text" id="fleetModel" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="fleetChassi" class="block text-sm font-medium text-gray-700">Chassi (ID Único)</label>
+                            <input type="text" id="fleetChassi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full">Salvar Frota</button>
+                    </form>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 border-b pb-2">Frotas Cadastradas</h3>
+                    <div id="fleetList" class="mt-4 max-h-64 overflow-y-auto space-y-2">
+                        <!-- Lista de frotas será preenchida aqui -->
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="closeFleetManagementBtn" class="btn btn-gray">Fechar</button>
+            </div>
         </div>
     </div>
     
@@ -318,6 +373,19 @@
         </div>
     </div>
 
+    <!-- Modal de Notificações -->
+    <div id="notificationsModal" class="modal-backdrop hidden">
+        <div class="modal-content large-modal-content">
+            <h2 class="text-2xl font-bold mb-4">Notificações de Empréstimos Vencidos</h2>
+            <div id="notificationsList" class="max-h-96 overflow-y-auto">
+                <!-- Lista de notificações aqui -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="closeNotificationsBtn" class="btn btn-gray">Fechar</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -342,6 +410,7 @@
             const modalTitle = document.getElementById('modalTitle');
             const itemForm = document.getElementById('itemForm');
             const itemTypeSelect = document.getElementById('itemType');
+            const itemClassContainer = document.getElementById('itemClassContainer');
             const cancelItemBtn = document.getElementById('cancelItemBtn');
             const imagePreview = document.getElementById('imagePreview');
             const itemImageInput = document.getElementById('itemImage');
@@ -363,8 +432,15 @@
             const assignUnitToLabel = document.getElementById('assignUnitToLabel');
             const assignUnitPeriodContainer = document.getElementById('assignUnitPeriodContainer');
             const assignUnitIdentifierContainer = document.getElementById('assignUnitIdentifierContainer');
+            const assignUnitIndefinite = document.getElementById('assignUnitIndefinite');
+            const assignUnitPeriod = document.getElementById('assignUnitPeriod');
             const cancelAssignUnitBtn = document.getElementById('cancelAssignUnitBtn');
 
+            const fleetManagementModal = document.getElementById('fleetManagementModal');
+            const fleetForm = document.getElementById('fleetForm');
+            const fleetList = document.getElementById('fleetList');
+            const manageFleetsBtn = document.getElementById('manageFleetsBtn');
+            const closeFleetManagementBtn = document.getElementById('closeFleetManagementBtn');
 
             const historyModal = document.getElementById('historyModal');
             const historyItemName = document.getElementById('historyItemName');
@@ -380,8 +456,15 @@
             const exportLogBtn = document.getElementById('exportLogBtn');
             const clearLogBtn = document.getElementById('clearLogBtn');
 
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const notificationBadge = document.getElementById('notificationBadge');
+            const notificationsModal = document.getElementById('notificationsModal');
+            const notificationsList = document.getElementById('notificationsList');
+            const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+
             // --- Estado da Aplicação ---
             let inventoryItems = [];
+            let fleets = [];
             let imageBase64 = null;
             let currentUser = null;
             const SUPER_ADMIN_USERNAME = 'GABRIELMAG';
@@ -391,6 +474,8 @@
             const saveUsers = (users) => localStorage.setItem('appUsers', JSON.stringify(users));
             const getInventory = () => JSON.parse(localStorage.getItem('inventoryData')) || [];
             const saveInventory = () => localStorage.setItem('inventoryData', JSON.stringify(inventoryItems));
+            const getFleets = () => JSON.parse(localStorage.getItem('appFleets')) || [];
+            const saveFleets = () => localStorage.setItem('appFleets', JSON.stringify(fleets));
             
             // --- Funções de Autenticação e UI ---
             const initializeAdmin = () => {
@@ -429,6 +514,7 @@
                 document.querySelectorAll('.admin-editor-only').forEach(el => el.classList.toggle('hidden', !(isAdmin || isEditor)));
                 
                 loadInventory();
+                loadFleets();
             };
             
             const loadInventory = () => {
@@ -436,7 +522,6 @@
                 let dataWasMigrated = false;
                 inventoryItems.forEach(item => {
                     if ((item.type === 'ferramenta' || item.type === 'atribuido') && !Array.isArray(item.units)) {
-                        console.log(`Migrando item: ${item.name}`);
                         item.units = [];
                         for (let i = 1; i <= item.quantity; i++) {
                             item.units.push({ unitId: i, status: 'disponivel' });
@@ -448,7 +533,12 @@
                 if (dataWasMigrated) {
                     saveInventory();
                 }
+                updateNotifications();
                 renderTable();
+            };
+
+            const loadFleets = () => {
+                fleets = getFleets();
             };
 
             const addHistoryRecord = (item, action, details) => {
@@ -533,6 +623,7 @@
                 imageBase64 = null;
                 imagePreview.classList.add('hidden');
                 imagePreview.src = '';
+                itemClassContainer.classList.add('hidden');
 
                 if (item) { // Modo Edição
                     modalTitle.textContent = 'Editar Item';
@@ -541,6 +632,10 @@
                     document.getElementById('itemName').value = item.name;
                     document.getElementById('itemQuantity').value = item.quantity;
                     document.getElementById('itemType').value = item.type || 'consumivel';
+                    if (item.type === 'atribuido') {
+                        itemClassContainer.classList.remove('hidden');
+                        document.getElementById('itemClass').value = item.class || '';
+                    }
                     if (item.imageData) {
                         imagePreview.src = item.imageData;
                         imagePreview.classList.remove('hidden');
@@ -579,7 +674,7 @@
                 unitList.innerHTML = '';
                 item.units.forEach(unit => {
                     const unitDiv = document.createElement('div');
-                    unitDiv.className = 'flex justify-between items-center p-2 border rounded-md';
+                    unitDiv.className = 'flex flex-wrap justify-between items-center p-3 border rounded-md gap-2';
                     let statusHTML = '';
                     if (unit.status !== 'disponivel') {
                         const target = isTool ? unit.lentTo : unit.assignedTo;
@@ -587,13 +682,20 @@
                         const identifier = unit.identifier ? `<span class="text-xs text-gray-500 block">ID: ${unit.identifier}</span>` : '';
                         const actionText = isTool ? 'Devolver' : 'Remover';
                         const actionFunc = isTool ? 'handleReturnUnit' : 'handleUnassignUnit';
+                        let extendButton = '';
+                        if (isTool) {
+                            extendButton = `<button onclick="handleExtendLoan('${item.id}', ${unit.unitId})" class="btn btn-yellow text-xs">Prorrogar</button>`;
+                        }
                         statusHTML = `
-                            <div>
+                            <div class="flex-grow">
                                 <p class="font-semibold">Unidade ${unit.unitId}</p>
                                 <p class="text-sm text-yellow-600">${isTool ? 'Emprestado para' : 'Atribuído a'}: ${target} ${period}</p>
                                 ${identifier}
                             </div>
-                            <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-red text-xs">${actionText}</button>
+                            <div class="flex gap-2">
+                                ${extendButton}
+                                <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-red text-xs">${actionText}</button>
+                            </div>
                         `;
                     } else {
                         const actionText = isTool ? 'Emprestar' : 'Atribuir';
@@ -625,7 +727,7 @@
                     assignUnitIdentifierContainer.classList.add('hidden');
                 } else {
                     assignUnitModalTitle.textContent = `Atribuir Unidade ${unitId}`;
-                    assignUnitToLabel.textContent = 'Atribuir a:';
+                    assignUnitToLabel.textContent = 'Atribuir a (Nome da Frota):';
                     assignUnitPeriodContainer.classList.add('hidden');
                     assignUnitIdentifierContainer.classList.remove('hidden');
                 }
@@ -686,6 +788,26 @@
             };
             const closeDeletedItemsModal = () => deletedItemsModal.classList.add('hidden');
 
+            const openNotificationsModal = (overdueLoans) => {
+                notificationsList.innerHTML = '';
+                if (overdueLoans.length === 0) {
+                    notificationsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum empréstimo vencido.</p>';
+                } else {
+                    overdueLoans.forEach(loan => {
+                        const notificationDiv = document.createElement('div');
+                        notificationDiv.className = 'p-3 border rounded-md mb-2 bg-red-50 border-red-200';
+                        notificationDiv.innerHTML = `
+                            <p class="font-semibold text-red-800">${loan.itemName} (Unidade ${loan.unitId})</p>
+                            <p class="text-sm text-red-700">Emprestado para: <strong>${loan.lentTo}</strong></p>
+                            <p class="text-sm text-red-700">Venceu há: <strong>${loan.daysOverdue} dia(s)</strong></p>
+                        `;
+                        notificationsList.appendChild(notificationDiv);
+                    });
+                }
+                notificationsModal.classList.remove('hidden');
+            };
+            const closeNotificationsModal = () => notificationsModal.classList.add('hidden');
+
             // --- Manipuladores de Eventos ---
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -740,6 +862,10 @@
             cancelAssignUnitBtn.addEventListener('click', closeAssignUnitModal);
             closeHistoryBtn.addEventListener('click', closeHistoryModal);
 
+            itemTypeSelect.addEventListener('change', (e) => {
+                itemClassContainer.classList.toggle('hidden', e.target.value !== 'atribuido');
+            });
+
             itemImageInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (file) {
@@ -760,6 +886,7 @@
                 const name = document.getElementById('itemName').value;
                 const quantity = parseInt(document.getElementById('itemQuantity').value);
                 const type = document.getElementById('itemType').value;
+                const itemClass = document.getElementById('itemClass').value;
 
                 if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
                     alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
@@ -773,6 +900,7 @@
                         if (item.id !== newId) changes.push(`ID alterado de '${item.id}' para '${newId}'`);
                         if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
                         if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
+                        if (item.class !== itemClass) changes.push(`Classe alterada para '${itemClass}'`);
                         
                         if ((item.type === 'atribuido' || item.type === 'ferramenta') && item.quantity !== quantity) {
                             const oldQty = item.quantity;
@@ -782,13 +910,12 @@
                                 return;
                             }
                             changes.push(`Quantidade alterada de '${oldQty}' para '${quantity}'`);
-                            // Sincroniza o array de unidades
                             const diff = quantity - item.units.length;
-                            if (diff > 0) { // Adicionar unidades
+                            if (diff > 0) {
                                 for (let i = 0; i < diff; i++) {
                                     item.units.push({ unitId: item.units.length + 1, status: 'disponivel' });
                                 }
-                            } else if (diff < 0) { // Remover unidades
+                            } else if (diff < 0) {
                                 let toRemove = Math.abs(diff);
                                 item.units = item.units.filter(unit => {
                                     if (unit.status === 'disponivel' && toRemove > 0) {
@@ -810,6 +937,7 @@
                         item.name = name;
                         item.quantity = quantity;
                         item.type = type;
+                        if (type === 'atribuido') item.class = itemClass;
                         item.imageData = imageBase64 || item.imageData;
                     }
                 } else { // Adicionar item
@@ -822,11 +950,14 @@
                             newItem.units.push({ unitId: i, status: 'disponivel' });
                         }
                     }
+                    if (type === 'atribuido') {
+                        newItem.class = itemClass;
+                    }
                     addHistoryRecord(newItem, 'Criação', `Item criado com ${quantity} unidades.`);
                     inventoryItems.push(newItem);
                 }
                 saveInventory();
-                renderTable();
+                loadInventory();
                 closeItemModal();
             });
             
@@ -849,7 +980,7 @@
                     addHistoryRecord(item, type, details);
                     
                     saveInventory();
-                    renderTable();
+                    loadInventory();
                     closeStockModal();
                 }
             });
@@ -860,6 +991,7 @@
                 const unitId = parseInt(document.getElementById('assignUnitUnitId').value);
                 const to = document.getElementById('assignUnitTo').value;
                 const period = document.getElementById('assignUnitPeriod').value;
+                const isIndefinite = document.getElementById('assignUnitIndefinite').checked;
                 const identifier = document.getElementById('assignUnitIdentifier').value;
 
                 const item = inventoryItems.find(i => i.id === itemId);
@@ -868,8 +1000,14 @@
                 if (item.type === 'ferramenta') {
                     unit.status = 'emprestada';
                     unit.lentTo = to;
-                    unit.lentPeriod = period;
-                    addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (${period}).`);
+                    unit.loanDate = new Date().toISOString();
+                    if (isIndefinite) {
+                        unit.loanDurationDays = -1; // -1 indica indefinido
+                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (prazo indefinido).`);
+                    } else {
+                        unit.loanDurationDays = parseInt(period);
+                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (${period} dias).`);
+                    }
                 } else { // Atribuído
                     unit.status = 'atribuido';
                     unit.assignedTo = to;
@@ -878,7 +1016,7 @@
                 }
 
                 saveInventory();
-                renderTable();
+                loadInventory();
                 openUnitManagementModal(item);
                 closeAssignUnitModal();
             });
@@ -896,7 +1034,7 @@
                         item.isDeleted = true;
                         addHistoryRecord(item, 'Exclusão', 'Item marcado como excluído.');
                         saveInventory();
-                        renderTable();
+                        loadInventory();
                     }
                 }
             };
@@ -922,9 +1060,10 @@
                     addHistoryRecord(item, 'Devolução', `Unidade ${unitId} devolvida por ${unit.lentTo}.`);
                     unit.status = 'disponivel';
                     delete unit.lentTo;
-                    delete unit.lentPeriod;
+                    delete unit.loanDate;
+                    delete unit.loanDurationDays;
                     saveInventory();
-                    renderTable();
+                    loadInventory();
                     openUnitManagementModal(item);
                 }
             };
@@ -942,7 +1081,7 @@
                     delete unit.assignedTo;
                     delete unit.identifier;
                     saveInventory();
-                    renderTable();
+                    loadInventory();
                     openUnitManagementModal(item);
                 }
             };
@@ -1027,7 +1166,7 @@
                             addHistoryRecord(item, 'Limpeza de Log', 'O histórico de todos os itens foi apagado.');
                         });
                         saveInventory();
-                        renderTable();
+                        loadInventory();
                         alert('Histórico de todos os itens foi limpo com sucesso.');
                     }
                 } else {
@@ -1060,12 +1199,13 @@
                                             'Nome do Item': item.name,
                                             'Unidade': unit.unitId,
                                             'Emprestada para': unit.lentTo,
-                                            'Período': unit.lentPeriod
+                                            'Período': unit.loanDurationDays === -1 ? 'Indefinido' : `${unit.loanDurationDays} dias`
                                         });
                                     } else { // Atribuído
                                         assignmentsData.push({
                                             'ID do Item': item.id,
                                             'Nome do Item': item.name,
+                                            'Classe': item.class || '',
                                             'Unidade': unit.unitId,
                                             'Identificador da Unidade': unit.identifier || '',
                                             'Atribuído a': unit.assignedTo
@@ -1082,6 +1222,7 @@
                         'ID': item.id,
                         'Nome': item.name,
                         'Tipo': item.type,
+                        'Classe (se aplicável)': item.class || '',
                         'Status/Qtd': statusOrQty,
                         'Última Alteração Por': lastChange ? lastChange.user : '',
                         'Data/Hora': lastChange ? new Date(lastChange.timestamp).toLocaleString('pt-BR') : ''
@@ -1132,6 +1273,65 @@
                 XLSX.writeFile(workbook, "log_completo_inventario.xlsx");
             });
 
+            // --- Lógica de Notificações ---
+            const updateNotifications = () => {
+                const overdueLoans = [];
+                const now = new Date();
+                inventoryItems.forEach(item => {
+                    if (item.type === 'ferramenta' && item.units) {
+                        item.units.forEach(unit => {
+                            if (unit.status === 'emprestada' && unit.loanDurationDays !== -1) {
+                                const loanDate = new Date(unit.loanDate);
+                                const dueDate = new Date(loanDate.setDate(loanDate.getDate() + unit.loanDurationDays));
+                                if (now > dueDate) {
+                                    const diffTime = Math.abs(now - dueDate);
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    overdueLoans.push({
+                                        itemName: item.name,
+                                        unitId: unit.unitId,
+                                        lentTo: unit.lentTo,
+                                        daysOverdue: diffDays
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+
+                if (overdueLoans.length > 0) {
+                    notificationBadge.textContent = overdueLoans.length;
+                    notificationBadge.classList.remove('hidden');
+                } else {
+                    notificationBadge.classList.add('hidden');
+                }
+                
+                notificationsBtn.onclick = () => openNotificationsModal(overdueLoans);
+            };
+
+            closeNotificationsBtn.addEventListener('click', closeNotificationsModal);
+
+            window.handleExtendLoan = (itemId, unitId) => {
+                const days = prompt("Prorrogar o empréstimo por quantos dias?");
+                if (days && !isNaN(parseInt(days)) && parseInt(days) > 0) {
+                    const item = inventoryItems.find(i => i.id === itemId);
+                    const unit = item.units.find(u => u.unitId === unitId);
+                    
+                    if (unit.loanDurationDays === -1) { // Era indefinido
+                        unit.loanDate = new Date().toISOString(); // Reinicia a contagem
+                        unit.loanDurationDays = parseInt(days);
+                    } else {
+                        unit.loanDurationDays += parseInt(days);
+                    }
+                    
+                    addHistoryRecord(item, 'Prorrogação', `Empréstimo da Unidade ${unitId} prorrogado por ${days} dias.`);
+                    saveInventory();
+                    loadInventory();
+                    openUnitManagementModal(item);
+                } else if (days !== null) {
+                    alert("Por favor, insira um número válido de dias.");
+                }
+            };
+            
             // --- Inicialização ---
             initializeAdmin();
             checkAuth();
