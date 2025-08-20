@@ -135,6 +135,7 @@
                         <select id="itemType" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                             <option value="consumivel">Consumível</option>
                             <option value="ferramenta">Ferramenta</option>
+                            <option value="atribuido">Atribuído</option>
                         </select>
                     </div>
                     <div class="mb-4">
@@ -145,6 +146,10 @@
                 <div class="mb-4">
                     <label for="itemName" class="block text-sm font-medium text-gray-700">Nome do Item</label>
                     <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div id="chassiFieldContainer" class="mb-4 hidden">
+                    <label for="itemChassi" class="block text-sm font-medium text-gray-700">Chassi/Cód. Equipamento</label>
+                    <input type="text" id="itemChassi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="mb-4">
                     <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
@@ -201,6 +206,24 @@
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" id="cancelLendBtn" class="btn btn-gray">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Confirmar Empréstimo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Atribuição de Item -->
+    <div id="assignModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 id="assignModalTitle" class="text-2xl font-bold mb-4">Atribuir Item</h2>
+            <form id="assignForm">
+                <input type="hidden" id="assignItemId">
+                <div class="mb-4">
+                    <label for="assignTo" class="block text-sm font-medium text-gray-700">Atribuir a:</label>
+                    <input type="text" id="assignTo" placeholder="Ex: Frota 101, Caminhão XYZ-1234" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" id="cancelAssignBtn" class="btn btn-gray">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Atribuição</button>
                 </div>
             </form>
         </div>
@@ -320,6 +343,8 @@
             const itemModal = document.getElementById('itemModal');
             const modalTitle = document.getElementById('modalTitle');
             const itemForm = document.getElementById('itemForm');
+            const itemTypeSelect = document.getElementById('itemType');
+            const chassiFieldContainer = document.getElementById('chassiFieldContainer');
             const cancelItemBtn = document.getElementById('cancelItemBtn');
             const imagePreview = document.getElementById('imagePreview');
             const itemImageInput = document.getElementById('itemImage');
@@ -332,6 +357,10 @@
             const lendModal = document.getElementById('lendModal');
             const lendForm = document.getElementById('lendForm');
             const cancelLendBtn = document.getElementById('cancelLendBtn');
+
+            const assignModal = document.getElementById('assignModal');
+            const assignForm = document.getElementById('assignForm');
+            const cancelAssignBtn = document.getElementById('cancelAssignBtn');
 
             const historyModal = document.getElementById('historyModal');
             const historyItemName = document.getElementById('historyItemName');
@@ -444,6 +473,14 @@
                             statusOrQtyCell = `<div class="text-green-600 font-semibold">Disponível</div>`;
                             actionButtons += `<button onclick="handleLendTool('${item.id}')" class="text-blue-500 hover:text-blue-700" title="Emprestar Ferramenta"><i class="fas fa-hand-holding-hand"></i></button>`;
                         }
+                    } else if (item.type === 'atribuido') {
+                        if (item.status === 'atribuido') {
+                            statusOrQtyCell = `<div class="text-indigo-600 font-semibold">Atribuído</div><div class="text-xs text-gray-500">Para: ${item.assignedTo}</div>`;
+                            actionButtons += `<button onclick="handleUnassignItem('${item.id}')" class="text-red-500 hover:text-red-700" title="Remover Atribuição"><i class="fas fa-unlink"></i></button>`;
+                        } else {
+                            statusOrQtyCell = `<div class="text-green-600 font-semibold">Disponível</div>`;
+                            actionButtons += `<button onclick="handleAssignItem('${item.id}')" class="text-indigo-500 hover:text-indigo-700" title="Atribuir Item"><i class="fas fa-link"></i></button>`;
+                        }
                     } else { // Consumível
                         statusOrQtyCell = `<div class="font-bold">${item.quantity}</div>`;
                         actionButtons += `
@@ -466,7 +503,7 @@
                         </td>
                         <td class="py-3 px-4">
                             <div class="font-medium">${item.name}</div>
-                            <div class="text-xs ${item.type === 'ferramenta' ? 'text-blue-500' : 'text-gray-500'}">${item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'N/D'}</div>
+                            <div class="text-xs ${item.type === 'ferramenta' ? 'text-blue-500' : (item.type === 'atribuido' ? 'text-indigo-500' : 'text-gray-500')}">${item.type ? item.type.charAt(0).toUpperCase() + item.type.slice(1) : 'N/D'}</div>
                         </td>
                         <td class="py-3 px-4">${statusOrQtyCell}</td>
                         <td class="py-3 px-4 text-sm">${lastChange ? `${lastChange.user} (${lastChange.action})` : 'N/A'}</td>
@@ -487,6 +524,7 @@
                 imageBase64 = null;
                 imagePreview.classList.add('hidden');
                 imagePreview.src = '';
+                chassiFieldContainer.classList.add('hidden');
 
                 if (item) { // Modo Edição
                     modalTitle.textContent = 'Editar Item';
@@ -495,6 +533,10 @@
                     document.getElementById('itemName').value = item.name;
                     document.getElementById('itemQuantity').value = item.quantity;
                     document.getElementById('itemType').value = item.type || 'consumivel';
+                    if (item.type === 'atribuido') {
+                        chassiFieldContainer.classList.remove('hidden');
+                        document.getElementById('itemChassi').value = item.chassi || '';
+                    }
                     if (item.imageData) {
                         imagePreview.src = item.imageData;
                         imagePreview.classList.remove('hidden');
@@ -534,6 +576,14 @@
                 lendModal.classList.remove('hidden');
             };
             const closeLendModal = () => lendModal.classList.add('hidden');
+
+            const openAssignModal = (item) => {
+                assignForm.reset();
+                document.getElementById('assignModalTitle').textContent = `Atribuir ${item.name}`;
+                document.getElementById('assignItemId').value = item.id;
+                assignModal.classList.remove('hidden');
+            };
+            const closeAssignModal = () => assignModal.classList.add('hidden');
             
             const openUserManagementModal = () => {
                 adminRoleOption.classList.toggle('hidden', currentUser.username !== SUPER_ADMIN_USERNAME);
@@ -638,8 +688,13 @@
             cancelItemBtn.addEventListener('click', closeItemModal);
             cancelStockBtn.addEventListener('click', closeStockModal);
             cancelLendBtn.addEventListener('click', closeLendModal);
+            cancelAssignBtn.addEventListener('click', closeAssignModal);
             closeHistoryBtn.addEventListener('click', closeHistoryModal);
             
+            itemTypeSelect.addEventListener('change', (e) => {
+                chassiFieldContainer.classList.toggle('hidden', e.target.value !== 'atribuido');
+            });
+
             itemImageInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (file) {
@@ -660,6 +715,7 @@
                 const name = document.getElementById('itemName').value;
                 const quantity = parseInt(document.getElementById('itemQuantity').value);
                 const type = document.getElementById('itemType').value;
+                const chassi = document.getElementById('itemChassi').value;
 
                 if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
                     alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
@@ -674,6 +730,7 @@
                         if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
                         if (item.quantity !== quantity) changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
                         if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
+                        if (item.chassi !== chassi) changes.push(`Chassi/Cód. alterado para '${chassi}'`);
                         
                         if (changes.length > 0) {
                             addHistoryRecord(item, 'Edição', changes.join(', '));
@@ -683,14 +740,18 @@
                         item.name = name;
                         item.quantity = quantity;
                         item.type = type;
+                        if (type === 'atribuido') item.chassi = chassi;
                         item.imageData = imageBase64 || item.imageData;
                     }
                 } else { // Adicionar item
                     const newItem = {
                         id: newId, name, quantity, type, imageData: imageBase64, history: [], isDeleted: false
                     };
-                    if (type === 'ferramenta') {
+                    if (type === 'ferramenta' || type === 'atribuido') {
                         newItem.status = 'disponivel';
+                    }
+                    if (type === 'atribuido') {
+                        newItem.chassi = chassi;
                     }
                     addHistoryRecord(newItem, 'Criação', `Item criado com ${quantity} unidades.`);
                     inventoryItems.push(newItem);
@@ -743,6 +804,23 @@
                 }
             });
 
+            assignForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('assignItemId').value;
+                const assignedTo = document.getElementById('assignTo').value;
+
+                const item = inventoryItems.find(i => i.id == id);
+                if (item) {
+                    item.status = 'atribuido';
+                    item.assignedTo = assignedTo;
+                    const details = `Atribuído a ${assignedTo}.`;
+                    addHistoryRecord(item, 'Atribuição', details);
+                    saveInventory();
+                    renderTable();
+                    closeAssignModal();
+                }
+            });
+
             // --- Funções Globais para Ações da Tabela ---
             window.handleEdit = (id) => {
                 const item = inventoryItems.find(i => i.id === id);
@@ -779,6 +857,23 @@
                     item.status = 'disponivel';
                     delete item.lentTo;
                     delete item.lentPeriod;
+                    saveInventory();
+                    renderTable();
+                }
+            };
+
+            window.handleAssignItem = (id) => {
+                const item = inventoryItems.find(i => i.id === id);
+                if (item) openAssignModal(item);
+            };
+
+            window.handleUnassignItem = (id) => {
+                const item = inventoryItems.find(i => i.id === id);
+                if (item && confirm(`Confirmar a remoção da atribuição de ${item.name}?`)) {
+                    const details = `Atribuição removida de ${item.assignedTo}.`;
+                    addHistoryRecord(item, 'Remoção de Atribuição', details);
+                    item.status = 'disponivel';
+                    delete item.assignedTo;
                     saveInventory();
                     renderTable();
                 }
@@ -854,14 +949,20 @@
                 const activeItems = inventoryItems.filter(item => !item.isDeleted);
                 const dataToExport = activeItems.map(item => {
                     const lastChange = item.history ? item.history[0] : null;
-                    let statusOrQty = item.type === 'ferramenta' 
-                        ? (item.status === 'emprestada' ? `Emprestada para ${item.lentTo}` : 'Disponível')
-                        : item.quantity;
+                    let statusOrQty = '';
+                    if (item.type === 'ferramenta') {
+                        statusOrQty = item.status === 'emprestada' ? `Emprestada para ${item.lentTo}` : 'Disponível';
+                    } else if (item.type === 'atribuido') {
+                        statusOrQty = item.status === 'atribuido' ? `Atribuído a ${item.assignedTo}` : 'Disponível';
+                    } else {
+                        statusOrQty = item.quantity;
+                    }
 
                     return {
                         'ID': item.id,
                         'Nome': item.name,
                         'Tipo': item.type,
+                        'Chassi/Cód.': item.chassi || '',
                         'Status/Qtd': statusOrQty,
                         'Última Alteração Por': lastChange ? lastChange.user : '',
                         'Data/Hora': lastChange ? new Date(lastChange.timestamp).toLocaleString('pt-BR') : ''
