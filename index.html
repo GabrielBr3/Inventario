@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Controle de Inventário - Melhorado</title>
+    <title>Sistema de Controle de Inventário</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (xlsx) library for Excel export -->
@@ -40,7 +40,7 @@
             margin: auto;
         }
         .large-modal-content {
-            max-width: 900px;
+            max-width: 800px;
         }
         .btn {
             @apply text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-50;
@@ -54,17 +54,6 @@
         
         /* Ocultar elementos por padrão */
         .hidden { display: none; }
-        
-        /* Estilos para abas */
-        .tab-button {
-            @apply px-4 py-2 font-medium text-sm rounded-t-lg border-b-2 border-transparent;
-        }
-        .tab-button.active {
-            @apply bg-blue-50 text-blue-600 border-blue-600;
-        }
-        .tab-button:not(.active) {
-            @apply text-gray-500 hover:text-gray-700 hover:border-gray-300;
-        }
     </style>
 </head>
 <body class="p-2 sm:p-4 md:p-8">
@@ -230,23 +219,19 @@
                 <input type="hidden" id="assignUnitUnitId">
                 <div class="mb-4">
                     <label for="assignUnitTo" id="assignUnitToLabel" class="block text-sm font-medium text-gray-700"></label>
-                    <input type="text" id="assignUnitTo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                    <div id="assignUnitToContainer"></div>
                 </div>
                 <div class="mb-4" id="assignUnitPeriodContainer">
                     <div class="flex items-center gap-4">
                         <div class="flex-grow">
-                            <label for="assignUnitPeriod" class="block text-sm font-medium text-gray-700">Prazo (dias)</label>
-                            <input type="number" id="assignUnitPeriod" min="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            <label for="assignUnitPeriod" class="block text-sm font-medium text-gray-700">Data de Devolução</label>
+                            <input type="date" id="assignUnitPeriod" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                         </div>
                         <div class="mt-6">
                             <input type="checkbox" id="assignUnitIndefinite" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             <label for="assignUnitIndefinite" class="ml-2 text-sm text-gray-900">Indefinido</label>
                         </div>
                     </div>
-                </div>
-                <div class="mb-4" id="assignUnitDateContainer">
-                    <label for="assignUnitDate" class="block text-sm font-medium text-gray-700">Data de Início</label>
-                    <input type="date" id="assignUnitDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="mb-4" id="assignUnitIdentifierContainer">
                     <label for="assignUnitIdentifier" class="block text-sm font-medium text-gray-700">Nº de Série / Cód. da Unidade</label>
@@ -264,100 +249,67 @@
     <div id="fleetManagementModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Gerenciar Frotas</h2>
-            
-            <!-- Abas -->
-            <div class="border-b border-gray-200 mb-6">
-                <nav class="-mb-px flex space-x-8">
-                    <button id="fleetTabBtn" class="tab-button active" onclick="switchFleetTab('fleet')">
-                        <i class="fas fa-truck mr-2"></i>Cadastrar Frotas
-                    </button>
-                    <button id="assignmentTabBtn" class="tab-button" onclick="switchFleetTab('assignment')">
-                        <i class="fas fa-link mr-2"></i>Atribuir Itens
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Aba de Cadastro de Frotas -->
-            <div id="fleetTab" class="tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <form id="fleetForm">
-                            <input type="hidden" id="originalChassi">
-                            <h3 class="text-lg font-semibold mb-2 border-b pb-2">Cadastrar/Editar Frota</h3>
-                            <div class="mb-4 mt-4">
-                                <label for="fleetName" class="block text-sm font-medium text-gray-700">Nome da Frota</label>
-                                <input type="text" id="fleetName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
-                            </div>
-                            <div class="mb-4">
-                                <label for="fleetModel" class="block text-sm font-medium text-gray-700">Modelo</label>
-                                <input type="text" id="fleetModel" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
-                            </div>
-                            <div class="mb-4">
-                                <label for="fleetChassi" class="block text-sm font-medium text-gray-700">Chassi (ID Único)</label>
-                                <input type="text" id="fleetChassi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
-                            </div>
-                            <div class="flex justify-end gap-3 mt-6">
-                                <button type="button" id="cancelFleetBtn" class="btn btn-gray">Cancelar</button>
-                                <button type="submit" class="btn btn-primary">Salvar Frota</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Frotas Cadastradas</h3>
-                        <div id="fleetList" class="max-h-96 overflow-y-auto space-y-2">
-                            <!-- Lista de frotas será preenchida aqui -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <form id="fleetForm">
+                        <input type="hidden" id="originalChassi">
+                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Cadastrar/Editar Frota</h3>
+                        <div class="mb-4 mt-4">
+                            <label for="fleetName" class="block text-sm font-medium text-gray-700">Nome da Frota</label>
+                            <input type="text" id="fleetName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Aba de Atribuição de Itens -->
-            <div id="assignmentTab" class="tab-content hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Selecionar Frota</h3>
                         <div class="mb-4">
-                            <label for="selectedFleet" class="block text-sm font-medium text-gray-700">Frota</label>
-                            <select id="selectedFleet" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
-                                <option value="">Selecione uma frota...</option>
-                            </select>
+                            <label for="fleetModel" class="block text-sm font-medium text-gray-700">Modelo</label>
+                            <input type="text" id="fleetModel" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                         </div>
-                        <div id="fleetDetails" class="hidden bg-gray-50 p-4 rounded-md mb-4">
-                            <h4 class="font-semibold mb-2">Detalhes da Frota</h4>
-                            <p><strong>Nome:</strong> <span id="fleetDetailName"></span></p>
-                            <p><strong>Modelo:</strong> <span id="fleetDetailModel"></span></p>
-                            <p><strong>Chassi:</strong> <span id="fleetDetailChassi"></span></p>
+                        <div class="mb-4">
+                            <label for="fleetChassi" class="block text-sm font-medium text-gray-700">Chassi (ID Único)</label>
+                            <input type="text" id="fleetChassi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                         </div>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Itens Atribuídos</h3>
-                        <div id="assignedItemsList" class="max-h-96 overflow-y-auto space-y-2">
-                            <!-- Lista de itens atribuídos será preenchida aqui -->
-                        </div>
+                        <button type="submit" class="btn btn-primary w-full">Salvar Frota</button>
+                    </form>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 border-b pb-2">Frotas Cadastradas</h3>
+                    <div id="fleetList" class="mt-4 max-h-64 overflow-y-auto space-y-2">
+                        <!-- Lista de frotas será preenchida aqui -->
                     </div>
                 </div>
             </div>
-
             <div class="flex justify-end mt-6">
                 <button type="button" id="closeFleetManagementBtn" class="btn btn-gray">Fechar</button>
             </div>
         </div>
     </div>
-
-    <!-- Modal de Gerenciamento de Usuários -->
+    
+    <!-- Modal de Itens Atribuídos à Frota -->
+    <div id="fleetItemsModal" class="modal-backdrop hidden">
+        <div class="modal-content large-modal-content">
+            <h2 class="text-2xl font-bold mb-2">Itens Atribuídos</h2>
+            <p class="mb-4 text-gray-600"><strong>Frota:</strong> <span id="fleetItemsName"></span></p>
+            <div id="fleetItemsList" class="max-h-96 overflow-y-auto space-y-2">
+                <!-- Lista de itens atribuídos aqui -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="closeFleetItemsBtn" class="btn btn-gray">Fechar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Gerenciamento de Usuários (Apenas Admin/Editor) -->
     <div id="userManagementModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Gerenciar Usuários</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                    <form id="userForm">
-                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Adicionar Novo Usuário</h3>
+                    <form id="registerUserForm">
+                        <h3 class="text-lg font-semibold mb-2 border-b pb-2">Cadastrar Novo Usuário</h3>
                         <div class="mb-4 mt-4">
-                            <label for="newUsername" class="block text-sm font-medium text-gray-700">Usuário</label>
+                            <label for="newUsername" class="block text-sm font-medium text-gray-700">Novo Usuário</label>
                             <input type="text" id="newUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
-                            <label for="newPassword" class="block text-sm font-medium text-gray-700">Senha</label>
+                            <label for="newPassword" class="block text-sm font-medium text-gray-700">Nova Senha</label>
                             <input type="password" id="newPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
@@ -368,14 +320,12 @@
                                 <option value="admin" id="adminRoleOption">Admin</option>
                             </select>
                         </div>
-                        <div class="flex justify-end gap-3 mt-6">
-                            <button type="submit" class="btn btn-primary">Adicionar Usuário</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary w-full">Cadastrar</button>
                     </form>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-2 border-b pb-2">Usuários Existentes</h3>
-                    <div id="userList" class="max-h-96 overflow-y-auto space-y-2">
+                    <div id="userList" class="mt-4 max-h-64 overflow-y-auto space-y-2">
                         <!-- Lista de usuários será preenchida aqui -->
                     </div>
                 </div>
@@ -386,53 +336,53 @@
         </div>
     </div>
 
-    <!-- Modal de Histórico -->
+    <!-- Modal de Histórico do Item -->
     <div id="historyModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
-            <h2 class="text-2xl font-bold mb-4">Histórico do Item: <span id="historyItemName"></span></h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white border border-gray-200">
-                    <thead class="bg-gray-100">
+            <h2 class="text-2xl font-bold mb-2">Histórico do Item</h2>
+            <p class="mb-4 text-gray-600"><strong>Item:</strong> <span id="historyItemName"></span></p>
+            <div class="max-h-96 overflow-y-auto border rounded-lg">
+                <table class="min-w-full">
+                    <thead class="bg-gray-100 sticky top-0">
                         <tr>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data/Hora</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Usuário</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ação</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Detalhes</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Data/Hora</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Usuário</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Ação</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Detalhes</th>
                         </tr>
                     </thead>
-                    <tbody id="historyLogBody">
-                        <!-- Histórico será inserido aqui -->
+                    <tbody id="historyLogBody" class="text-gray-700 text-sm">
+                        <!-- Registros do histórico aqui -->
                     </tbody>
                 </table>
             </div>
             <div class="flex justify-end mt-6">
-                <button type="button" id="closeHistoryModalBtn" class="btn btn-gray">Fechar</button>
+                <button type="button" id="closeHistoryBtn" class="btn btn-gray">Fechar</button>
             </div>
         </div>
     </div>
-
-    <!-- Modal de Itens Excluídos -->
+    
+    <!-- Modal de Itens Excluídos (Apenas Admin/Editor) -->
     <div id="deletedItemsModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Itens Excluídos</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white border border-gray-200">
-                    <thead class="bg-gray-100">
+            <div class="max-h-96 overflow-y-auto border rounded-lg">
+                <table class="min-w-full">
+                     <thead class="bg-gray-100 sticky top-0">
                         <tr>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome do Item</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Excluído Por</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data/Hora Exclusão</th>
-                            <th class="py-2 px-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Nome</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Excluído Por</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Data da Exclusão</th>
                         </tr>
                     </thead>
-                    <tbody id="deletedItemsBody">
-                        <!-- Itens excluídos serão inseridos aqui -->
+                    <tbody id="deletedItemsBody" class="text-gray-700 text-sm">
+                        <!-- Itens excluídos aqui -->
                     </tbody>
                 </table>
             </div>
             <div class="flex justify-end mt-6">
-                <button type="button" id="closeDeletedItemsModalBtn" class="btn btn-gray">Fechar</button>
+                <button type="button" id="closeDeletedItemsBtn" class="btn btn-gray">Fechar</button>
             </div>
         </div>
     </div>
@@ -440,9 +390,9 @@
     <!-- Modal de Notificações -->
     <div id="notificationsModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
-            <h2 class="text-2xl font-bold mb-4">Notificações</h2>
-            <div id="notificationsList" class="max-h-96 overflow-y-auto space-y-2">
-                <!-- Notificações serão inseridas aqui -->
+            <h2 class="text-2xl font-bold mb-4">Notificações de Empréstimos Vencidos</h2>
+            <div id="notificationsList" class="max-h-96 overflow-y-auto">
+                <!-- Lista de notificações aqui -->
             </div>
             <div class="flex justify-end mt-6">
                 <button type="button" id="closeNotificationsBtn" class="btn btn-gray">Fechar</button>
@@ -450,205 +400,124 @@
         </div>
     </div>
 
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- Elementos do DOM ---
             const loginBackdrop = document.getElementById('loginBackdrop');
             const loginForm = document.getElementById('loginForm');
-            const loginUsernameInput = document.getElementById('loginUsername');
-            const loginPasswordInput = document.getElementById('loginPassword');
             const appContainer = document.getElementById('appContainer');
             const loggedInUserSpan = document.getElementById('loggedInUser');
             const userRoleSpan = document.getElementById('userRole');
             const logoutBtn = document.getElementById('logoutBtn');
+            const manageUsersBtn = document.getElementById('manageUsersBtn');
+            const userManagementModal = document.getElementById('userManagementModal');
+            const registerUserForm = document.getElementById('registerUserForm');
+            const closeUserManagementBtn = document.getElementById('closeUserManagementBtn');
+            const userListDiv = document.getElementById('userList');
+            const adminRoleOption = document.getElementById('adminRoleOption');
+            
+            const inventoryTableBody = document.getElementById('inventoryTableBody');
             const searchInput = document.getElementById('searchInput');
             const addItemBtn = document.getElementById('addItemBtn');
-            const exportBtn = document.getElementById('exportBtn');
-            const inventoryTableBody = document.getElementById('inventoryTableBody');
             const itemModal = document.getElementById('itemModal');
             const modalTitle = document.getElementById('modalTitle');
             const itemForm = document.getElementById('itemForm');
-            const cancelItemBtn = document.getElementById('cancelItemBtn');
             const itemTypeSelect = document.getElementById('itemType');
             const itemClassContainer = document.getElementById('itemClassContainer');
-            const itemImageInput = document.getElementById('itemImage');
+            const cancelItemBtn = document.getElementById('cancelItemBtn');
             const imagePreview = document.getElementById('imagePreview');
+            const itemImageInput = document.getElementById('itemImage');
+
             const stockModal = document.getElementById('stockModal');
             const stockModalTitle = document.getElementById('stockModalTitle');
             const stockForm = document.getElementById('stockForm');
             const cancelStockBtn = document.getElementById('cancelStockBtn');
+
             const unitManagementModal = document.getElementById('unitManagementModal');
             const unitManagementTitle = document.getElementById('unitManagementTitle');
             const unitManagementItemName = document.getElementById('unitManagementItemName');
             const unitList = document.getElementById('unitList');
             const closeUnitManagementBtn = document.getElementById('closeUnitManagementBtn');
+
             const assignUnitModal = document.getElementById('assignUnitModal');
-            const assignUnitModalTitle = document.getElementById('assignUnitModalTitle');
             const assignUnitForm = document.getElementById('assignUnitForm');
+            const assignUnitModalTitle = document.getElementById('assignUnitModalTitle');
             const assignUnitToLabel = document.getElementById('assignUnitToLabel');
+            const assignUnitToContainer = document.getElementById('assignUnitToContainer');
             const assignUnitPeriodContainer = document.getElementById('assignUnitPeriodContainer');
-            const assignUnitDateContainer = document.getElementById('assignUnitDateContainer');
             const assignUnitIdentifierContainer = document.getElementById('assignUnitIdentifierContainer');
+            const assignUnitIndefinite = document.getElementById('assignUnitIndefinite');
+            const assignUnitPeriod = document.getElementById('assignUnitPeriod');
             const cancelAssignUnitBtn = document.getElementById('cancelAssignUnitBtn');
-            const manageUsersBtn = document.getElementById('manageUsersBtn');
-            const userManagementModal = document.getElementById('userManagementModal');
-            const userForm = document.getElementById('userForm');
-            const userListDiv = document.getElementById('userList');
-            const adminRoleOption = document.getElementById('adminRoleOption');
-            const closeUserManagementBtn = document.getElementById('closeUserManagementBtn');
+
+            const fleetManagementModal = document.getElementById('fleetManagementModal');
+            const fleetForm = document.getElementById('fleetForm');
+            const fleetList = document.getElementById('fleetList');
+            const manageFleetsBtn = document.getElementById('manageFleetsBtn');
+            const closeFleetManagementBtn = document.getElementById('closeFleetManagementBtn');
+            
+            const fleetItemsModal = document.getElementById('fleetItemsModal');
+            const fleetItemsName = document.getElementById('fleetItemsName');
+            const fleetItemsList = document.getElementById('fleetItemsList');
+            const closeFleetItemsBtn = document.getElementById('closeFleetItemsBtn');
+
             const historyModal = document.getElementById('historyModal');
             const historyItemName = document.getElementById('historyItemName');
             const historyLogBody = document.getElementById('historyLogBody');
-            const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+            const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+            
             const viewDeletedBtn = document.getElementById('viewDeletedBtn');
             const deletedItemsModal = document.getElementById('deletedItemsModal');
             const deletedItemsBody = document.getElementById('deletedItemsBody');
-            const closeDeletedItemsModalBtn = document.getElementById('closeDeletedItemsModalBtn');
-            const clearLogBtn = document.getElementById('clearLogBtn');
+            const closeDeletedItemsBtn = document.getElementById('closeDeletedItemsBtn');
+
+            const exportBtn = document.getElementById('exportBtn');
             const exportLogBtn = document.getElementById('exportLogBtn');
+            const clearLogBtn = document.getElementById('clearLogBtn');
+
             const notificationsBtn = document.getElementById('notificationsBtn');
             const notificationBadge = document.getElementById('notificationBadge');
             const notificationsModal = document.getElementById('notificationsModal');
             const notificationsList = document.getElementById('notificationsList');
             const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
-            const manageFleetsBtn = document.getElementById('manageFleetsBtn');
-            const fleetManagementModal = document.getElementById('fleetManagementModal');
-            const fleetForm = document.getElementById('fleetForm');
-            const fleetList = document.getElementById('fleetList');
-            const cancelFleetBtn = document.getElementById('cancelFleetBtn');
-            const closeFleetManagementBtn = document.getElementById('closeFleetManagementBtn');
-            const selectedFleet = document.getElementById('selectedFleet');
-            const fleetDetails = document.getElementById('fleetDetails');
-            const assignedItemsList = document.getElementById('assignedItemsList');
 
-            // --- Variáveis de Estado ---
+            // --- Estado da Aplicação ---
             let inventoryItems = [];
-            let users = [];
-            let currentUser = null;
-            let imageBase64 = null;
             let fleets = [];
+            let imageBase64 = null;
+            let currentUser = null;
+            const SUPER_ADMIN_USERNAME = 'GABRIELMAG';
 
-            const SUPER_ADMIN_USERNAME = 'admin'; // Usuário super admin fixo
-
-            // --- Funções de Armazenamento Local ---
-            const getInventory = () => JSON.parse(localStorage.getItem('inventoryItems')) || [];
-            const saveInventory = () => localStorage.setItem('inventoryItems', JSON.stringify(inventoryItems));
-            const getUsers = () => JSON.parse(localStorage.getItem('users')) || [
-                { username: SUPER_ADMIN_USERNAME, password: 'admin', role: 'admin' },
-                { username: 'editor', password: 'editor', role: 'editor' },
-                { username: 'user', password: 'user', role: 'user' }
-            ];
-            const saveUsers = (usersToSave) => localStorage.setItem('users', JSON.stringify(usersToSave));
-            const getFleets = () => JSON.parse(localStorage.getItem('fleets')) || [];
-            const saveFleets = () => localStorage.setItem('fleets', JSON.stringify(fleets));
-
-            // --- Funções de Abas ---
-            window.switchFleetTab = (tabName) => {
-                // Remove active class from all tabs
-                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-                
-                // Add active class to selected tab
-                if (tabName === 'fleet') {
-                    document.getElementById('fleetTabBtn').classList.add('active');
-                    document.getElementById('fleetTab').classList.remove('hidden');
-                } else if (tabName === 'assignment') {
-                    document.getElementById('assignmentTabBtn').classList.add('active');
-                    document.getElementById('assignmentTab').classList.remove('hidden');
-                    updateFleetSelector();
+            // --- Funções de Armazenamento ---
+            const getUsers = () => JSON.parse(localStorage.getItem('appUsers')) || [];
+            const saveUsers = (users) => localStorage.setItem('appUsers', JSON.stringify(users));
+            const getInventory = () => JSON.parse(localStorage.getItem('inventoryData')) || [];
+            const saveInventory = () => localStorage.setItem('inventoryData', JSON.stringify(inventoryItems));
+            const getFleets = () => JSON.parse(localStorage.getItem('appFleets')) || [];
+            const saveFleets = () => localStorage.setItem('appFleets', JSON.stringify(fleets));
+            
+            // --- Funções de Autenticação e UI ---
+            const initializeAdmin = () => {
+                let users = getUsers();
+                if (!users.some(u => u.username === SUPER_ADMIN_USERNAME)) {
+                    users.push({ username: SUPER_ADMIN_USERNAME, password: '550323', role: 'admin' });
+                    saveUsers(users);
                 }
             };
 
-            const updateFleetSelector = () => {
-                selectedFleet.innerHTML = '<option value="">Selecione uma frota...</option>';
-                fleets.forEach(fleet => {
-                    const option = document.createElement('option');
-                    option.value = fleet.chassi;
-                    option.textContent = `${fleet.name} (${fleet.model} - ${fleet.chassi})`;
-                    selectedFleet.appendChild(option);
-                });
-            };
-
-            selectedFleet.addEventListener('change', (e) => {
-                const chassi = e.target.value;
-                if (chassi) {
-                    const fleet = fleets.find(f => f.chassi === chassi);
-                    if (fleet) {
-                        document.getElementById('fleetDetailName').textContent = fleet.name;
-                        document.getElementById('fleetDetailModel').textContent = fleet.model;
-                        document.getElementById('fleetDetailChassi').textContent = fleet.chassi;
-                        fleetDetails.classList.remove('hidden');
-                        updateAssignedItemsList(chassi);
-                    }
-                } else {
-                    fleetDetails.classList.add('hidden');
-                    assignedItemsList.innerHTML = '';
-                }
-            });
-
-            const updateAssignedItemsList = (chassi) => {
-                assignedItemsList.innerHTML = '';
-                const assignedItems = [];
-                
-                inventoryItems.forEach(item => {
-                    if (item.type === 'atribuido' && item.units) {
-                        item.units.forEach(unit => {
-                            if (unit.status === 'atribuido' && unit.assignedTo === chassi) {
-                                assignedItems.push({
-                                    item: item,
-                                    unit: unit
-                                });
-                            }
-                        });
-                    }
-                });
-
-                if (assignedItems.length === 0) {
-                    assignedItemsList.innerHTML = '<p class="text-center text-gray-500">Nenhum item atribuído a esta frota.</p>';
-                } else {
-                    assignedItems.forEach(({ item, unit }) => {
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = 'flex justify-between items-center p-3 border rounded-md';
-                        itemDiv.innerHTML = `
-                            <div>
-                                <p class="font-semibold">${item.name} - Unidade ${unit.unitId}</p>
-                                <p class="text-sm text-gray-500">Classe: ${item.class || 'N/A'}</p>
-                                <p class="text-sm text-gray-500">Nº Série: ${unit.identifier || 'N/A'}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="handleEditUnitIdentifier('${item.id}', ${unit.unitId}, '${unit.identifier || ''}')" class="btn btn-gray text-xs"><i class="fas fa-pencil-alt"></i></button>
-                                <button onclick="handleUnassignUnit('${item.id}', ${unit.unitId})" class="btn btn-red text-xs">Remover</button>
-                            </div>
-                        `;
-                        assignedItemsList.appendChild(itemDiv);
-                    });
-                }
-            };
-
-            // --- Lógica de Autenticação ---
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const username = loginUsernameInput.value;
-                const password = loginPasswordInput.value;
-                users = getUsers();
-                const foundUser = users.find(u => u.username === username && u.password === password);
-
-                if (foundUser) {
-                    currentUser = foundUser;
+            const checkAuth = () => {
+                const userSession = JSON.parse(sessionStorage.getItem('currentUser'));
+                if (userSession) {
+                    currentUser = userSession;
                     showApp();
                 } else {
-                    alert('Usuário ou senha inválidos.');
+                    showLogin();
                 }
-            });
+            };
 
-            logoutBtn.addEventListener('click', () => {
-                currentUser = null;
-                hideApp();
+            const showLogin = () => {
                 loginBackdrop.classList.remove('hidden');
-                loginForm.reset();
-            });
-
-            const hideApp = () => {
                 appContainer.classList.add('hidden');
             };
 
@@ -675,7 +544,7 @@
                     if ((item.type === 'ferramenta' || item.type === 'atribuido') && !Array.isArray(item.units)) {
                         item.units = [];
                         for (let i = 1; i <= item.quantity; i++) {
-                            item.units.push({ unitId: i, status: 'disponivel', identifier: '' });
+                            item.units.push({ unitId: i, status: 'disponivel' });
                         }
                         dataWasMigrated = true;
                     }
@@ -828,29 +697,15 @@
                     unitDiv.className = 'flex flex-wrap justify-between items-center p-3 border rounded-md gap-2';
                     let statusHTML = '';
                     if (unit.status !== 'disponivel') {
-                        const target = isTool ? unit.lentTo : unit.assignedTo;
-                        let period = '';
-                        if (isTool && unit.loanDurationDays) {
-                            if (unit.loanDurationDays === -1) {
-                                period = '(Indefinido)';
-                            } else {
-                                const startDate = new Date(unit.loanDate);
-                                const endDate = new Date(startDate);
-                                endDate.setDate(startDate.getDate() + unit.loanDurationDays);
-                                period = `(${unit.loanDurationDays} dias - até ${endDate.toLocaleDateString('pt-BR')})`;
-                            }
-                        }
+                        const target = isTool ? unit.lentTo : fleets.find(f => f.chassi === unit.assignedTo)?.name || unit.assignedTo;
+                        const period = isTool && unit.dueDate ? (unit.dueDate === 'Indefinido' ? '(Indefinido)' : `(Devolver até: ${new Date(unit.dueDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})})`) : '';
                         const identifier = unit.identifier ? `<span class="text-xs text-gray-500 block">Nº Série: ${unit.identifier}</span>` : '';
                         const actionText = isTool ? 'Devolver' : 'Remover';
                         const actionFunc = isTool ? 'handleReturnUnit' : 'handleUnassignUnit';
                         let extendButton = '';
-                        let editIdentifierButton = '';
-
                         if (isTool) {
                             extendButton = `<button onclick="handleExtendLoan('${item.id}', ${unit.unitId})" class="btn btn-yellow text-xs">Prorrogar</button>`;
                         }
-                        editIdentifierButton = `<button onclick="handleEditUnitIdentifier('${item.id}', ${unit.unitId}, '${unit.identifier || ''}')" class="btn btn-gray text-xs"><i class="fas fa-pencil-alt"></i></button>`;
-
                         statusHTML = `
                             <div class="flex-grow">
                                 <p class="font-semibold">Unidade ${unit.unitId}</p>
@@ -858,7 +713,6 @@
                                 ${identifier}
                             </div>
                             <div class="flex gap-2">
-                                ${editIdentifierButton}
                                 ${extendButton}
                                 <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-red text-xs">${actionText}</button>
                             </div>
@@ -866,18 +720,12 @@
                     } else {
                         const actionText = isTool ? 'Emprestar' : 'Atribuir';
                         const actionFunc = isTool ? 'handleLendUnit' : 'handleAssignUnit';
-                        let editIdentifierButton = `<button onclick="handleEditUnitIdentifier('${item.id}', ${unit.unitId}, '${unit.identifier || ''}')" class="btn btn-gray text-xs"><i class="fas fa-pencil-alt"></i></button>`;
-
                         statusHTML = `
                             <div>
                                 <p class="font-semibold">Unidade ${unit.unitId}</p>
                                 <p class="text-sm text-green-600">Disponível</p>
-                                ${unit.identifier ? `<span class="text-xs text-gray-500 block">Nº Série: ${unit.identifier}</span>` : ''}
                             </div>
-                            <div class="flex gap-2">
-                                ${editIdentifierButton}
-                                <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-primary text-xs">${actionText}</button>
-                            </div>
+                            <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-primary text-xs">${actionText}</button>
                         `;
                     }
                     unitDiv.innerHTML = statusHTML;
@@ -892,56 +740,37 @@
                 document.getElementById('assignUnitItemId').value = itemId;
                 document.getElementById('assignUnitUnitId').value = unitId;
                 
-                // Set default date to today
-                document.getElementById('assignUnitDate').value = new Date().toISOString().split('T')[0];
-                
                 if (isTool) {
                     assignUnitModalTitle.textContent = `Emprestar Unidade ${unitId}`;
-                    assignUnitToLabel.textContent = 'Emprestar para (Nome da Pessoa/Setor):';
+                    const toInput = document.createElement('input');
+                    toInput.type = 'text';
+                    toInput.id = 'assignUnitTo';
+                    toInput.className = 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm';
+                    toInput.required = true;
+                    assignUnitToLabel.textContent = 'Emprestar para:';
+                    assignUnitToContainer.innerHTML = '';
+                    assignUnitToContainer.appendChild(toInput);
+                    
                     assignUnitPeriodContainer.classList.remove('hidden');
-                    assignUnitDateContainer.classList.remove('hidden');
                     assignUnitIdentifierContainer.classList.add('hidden');
-                    // Remove any existing fleet select and revert to text input
-                    const currentAssignUnitTo = document.getElementById('assignUnitTo');
-                    if (currentAssignUnitTo.tagName === 'SELECT') {
-                        const newTextInput = document.createElement('input');
-                        newTextInput.type = 'text';
-                        newTextInput.id = 'assignUnitTo';
-                        newTextInput.className = 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm';
-                        newTextInput.required = true;
-                        currentAssignUnitTo.parentNode.replaceChild(newTextInput, currentAssignUnitTo);
-                    }
-
-                } else { // Atribuído
+                } else {
                     assignUnitModalTitle.textContent = `Atribuir Unidade ${unitId}`;
-                    assignUnitToLabel.innerHTML = 'Atribuir à Frota:';
+                    assignUnitToLabel.textContent = 'Atribuir à Frota:';
                     
                     const fleetSelect = document.createElement('select');
                     fleetSelect.id = 'assignUnitTo';
                     fleetSelect.className = 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm';
-                    fleetSelect.required = true;
-                    
-                    if (fleets.length === 0) {
+                    fleets.forEach(fleet => {
                         const option = document.createElement('option');
-                        option.value = '';
-                        option.textContent = 'Nenhuma frota cadastrada';
-                        option.disabled = true;
-                        option.selected = true;
+                        option.value = fleet.chassi;
+                        option.textContent = `${fleet.name} (${fleet.model})`;
                         fleetSelect.appendChild(option);
-                    } else {
-                        fleets.forEach(fleet => {
-                            const option = document.createElement('option');
-                            option.value = fleet.chassi;
-                            option.textContent = `${fleet.name} (${fleet.model} - ${fleet.chassi})`;
-                            fleetSelect.appendChild(option);
-                        });
-                    }
+                    });
                     
-                    const oldInput = document.getElementById('assignUnitTo');
-                    oldInput.parentNode.replaceChild(fleetSelect, oldInput);
+                    assignUnitToContainer.innerHTML = '';
+                    assignUnitToContainer.appendChild(fleetSelect);
                     
                     assignUnitPeriodContainer.classList.add('hidden');
-                    assignUnitDateContainer.classList.add('hidden');
                     assignUnitIdentifierContainer.classList.remove('hidden');
                 }
                 
@@ -991,14 +820,11 @@
                             <td class="py-2 px-3">${item.name}</td>
                             <td class="py-2 px-3">${deletionRecord ? deletionRecord.user : 'N/A'}</td>
                             <td class="py-2 px-3">${deletionRecord ? new Date(deletionRecord.timestamp).toLocaleString('pt-BR') : 'N/A'}</td>
-                            <td class="py-2 px-3 text-center">
-                                <button onclick="handleRestoreItem('${item.id}')" class="text-green-500 hover:text-green-700" title="Restaurar Item"><i class="fas fa-undo"></i></button>
-                            </td>
                         `;
                         deletedItemsBody.appendChild(row);
                     });
                 } else {
-                    deletedItemsBody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Nenhum item excluído.</td></tr>`;
+                    deletedItemsBody.innerHTML = `<tr><td colspan="4" class="text-center py-4">Nenhum item excluído.</td></tr>`;
                 }
                 deletedItemsModal.classList.remove('hidden');
             };
@@ -1006,62 +832,90 @@
 
             const openNotificationsModal = (overdueLoans) => {
                 notificationsList.innerHTML = '';
-                if (overdueLoans.length > 0) {
+                if (overdueLoans.length === 0) {
+                    notificationsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum empréstimo vencido.</p>';
+                } else {
                     overdueLoans.forEach(loan => {
                         const notificationDiv = document.createElement('div');
-                        notificationDiv.className = 'p-3 border rounded-md bg-red-50';
+                        notificationDiv.className = 'p-3 border rounded-md mb-2 bg-red-50 border-red-200';
                         notificationDiv.innerHTML = `
-                            <p class="font-semibold">Empréstimo Atrasado: ${loan.itemName} (Unidade ${loan.unitId})</p>
-                            <p class="text-sm text-gray-700">Emprestado para: ${loan.lentTo}</p>
-                            <p class="text-sm text-red-600">Atrasado em: ${loan.daysOverdue} dias</p>
+                            <p class="font-semibold text-red-800">${loan.itemName} (Unidade ${loan.unitId})</p>
+                            <p class="text-sm text-red-700">Emprestado para: <strong>${loan.lentTo}</strong></p>
+                            <p class="text-sm text-red-700">Venceu há: <strong>${loan.daysOverdue} dia(s)</strong></p>
                         `;
                         notificationsList.appendChild(notificationDiv);
                     });
-                } else {
-                    notificationsList.innerHTML = `<p class="text-center text-gray-500">Nenhuma notificação no momento.</p>`;
                 }
                 notificationsModal.classList.remove('hidden');
             };
-
             const closeNotificationsModal = () => notificationsModal.classList.add('hidden');
 
-            // --- Event Listeners ---
-            searchInput.addEventListener('keyup', () => renderTable(searchInput.value));
+            // --- Manipuladores de Eventos ---
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+                const users = getUsers();
+                const user = users.find(u => u.username === username && u.password === password);
+
+                if (user) {
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    checkAuth();
+                } else {
+                    alert('Usuário ou senha inválidos.');
+                }
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                sessionStorage.removeItem('currentUser');
+                currentUser = null;
+                checkAuth();
+            });
+
+            manageUsersBtn.addEventListener('click', openUserManagementModal);
+            closeUserManagementBtn.addEventListener('click', closeUserManagementModal);
+            viewDeletedBtn.addEventListener('click', openDeletedItemsModal);
+            closeDeletedItemsBtn.addEventListener('click', closeDeletedItemsModal);
+
+            registerUserForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newUsername = document.getElementById('newUsername').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const newUserRole = document.getElementById('newUserRole').value;
+                let users = getUsers();
+
+                if (users.some(u => u.username === newUsername)) {
+                    alert('Este nome de usuário já existe.');
+                    return;
+                }
+
+                users.push({ username: newUsername, password: newPassword, role: newUserRole });
+                saveUsers(users);
+                alert(`Usuário '${newUsername}' cadastrado com sucesso!`);
+                registerUserForm.reset();
+                renderUserList();
+            });
+            
+            searchInput.addEventListener('input', (e) => renderTable(e.target.value));
             addItemBtn.addEventListener('click', () => openItemModal());
             cancelItemBtn.addEventListener('click', closeItemModal);
             cancelStockBtn.addEventListener('click', closeStockModal);
             closeUnitManagementBtn.addEventListener('click', closeUnitManagementModal);
             cancelAssignUnitBtn.addEventListener('click', closeAssignUnitModal);
-            manageUsersBtn.addEventListener('click', openUserManagementModal);
-            closeUserManagementBtn.addEventListener('click', closeUserManagementModal);
-            closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
-            viewDeletedBtn.addEventListener('click', openDeletedItemsModal);
-            closeDeletedItemsModalBtn.addEventListener('click', closeDeletedItemsModal);
-            notificationsBtn.addEventListener('click', () => openNotificationsModal([])); // Pass empty array for initial open
-            closeNotificationsBtn.addEventListener('click', closeNotificationsModal);
-            manageFleetsBtn.addEventListener('click', () => openFleetManagementModal());
-            cancelFleetBtn.addEventListener('click', () => {
-                fleetForm.reset();
-                document.getElementById('fleetChassi').disabled = false;
-            });
-            closeFleetManagementBtn.addEventListener('click', closeFleetManagementModal);
+            closeHistoryBtn.addEventListener('click', closeHistoryModal);
 
             itemTypeSelect.addEventListener('change', (e) => {
-                if (e.target.value === 'atribuido') {
-                    itemClassContainer.classList.remove('hidden');
-                } else {
-                    itemClassContainer.classList.add('hidden');
-                }
+                itemClassContainer.classList.toggle('hidden', e.target.value !== 'atribuido');
             });
 
-            itemImageInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
+            itemImageInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        imagePreview.src = e.target.result;
-                        imagePreview.classList.remove('hidden');
                         imageBase64 = e.target.result;
+                        imagePreview.src = imageBase64;
+                        imagePreview.classList.remove('hidden');
                     };
                     reader.readAsDataURL(file);
                 }
@@ -1069,87 +923,104 @@
 
             itemForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const originalItemId = document.getElementById('originalItemId').value;
-                const itemId = document.getElementById('itemId').value;
-                const itemName = document.getElementById('itemName').value;
-                const itemQuantity = parseInt(document.getElementById('itemQuantity').value);
-                const itemType = document.getElementById('itemType').value;
+                const originalId = document.getElementById('originalItemId').value;
+                const newId = document.getElementById('itemId').value;
+                const name = document.getElementById('itemName').value;
+                const quantity = parseInt(document.getElementById('itemQuantity').value);
+                const type = document.getElementById('itemType').value;
                 const itemClass = document.getElementById('itemClass').value;
 
-                if (originalItemId) { // Edição
-                    const itemIndex = inventoryItems.findIndex(i => i.id === originalItemId);
-                    if (itemIndex !== -1) {
-                        const oldItem = { ...inventoryItems[itemIndex] };
-                        inventoryItems[itemIndex] = {
-                            ...inventoryItems[itemIndex],
-                            id: itemId,
-                            name: itemName,
-                            quantity: itemQuantity,
-                            type: itemType,
-                            class: itemType === 'atribuido' ? itemClass : undefined,
-                            imageData: imageBase64 || oldItem.imageData,
-                        };
-                        // Adjust units if quantity changed for tools/attributed items
-                        if ((itemType === 'ferramenta' || itemType === 'atribuido') && oldItem.quantity !== itemQuantity) {
-                            const currentUnits = inventoryItems[itemIndex].units || [];
-                            const newUnits = [];
-                            for (let i = 1; i <= itemQuantity; i++) {
-                                const existingUnit = currentUnits.find(u => u.unitId === i);
-                                if (existingUnit) {
-                                    newUnits.push(existingUnit);
-                                } else {
-                                    newUnits.push({ unitId: i, status: 'disponivel', identifier: '' });
-                                }
+                if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
+                    alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
+                    return;
+                }
+
+                if (originalId) { // Atualizar item
+                    const item = inventoryItems.find(i => i.id == originalId);
+                    if (item) {
+                        let changes = [];
+                        if (item.id !== newId) changes.push(`ID alterado de '${item.id}' para '${newId}'`);
+                        if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
+                        if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
+                        if (item.class !== itemClass) changes.push(`Classe alterada para '${itemClass}'`);
+                        
+                        if ((item.type === 'atribuido' || item.type === 'ferramenta') && item.quantity !== quantity) {
+                            const oldQty = item.quantity;
+                            const inUseUnits = item.units.filter(u => u.status !== 'disponivel').length;
+                            if (quantity < inUseUnits) {
+                                alert(`Não é possível reduzir a quantidade para ${quantity}, pois existem ${inUseUnits} unidades atualmente em uso.`);
+                                return;
                             }
-                            inventoryItems[itemIndex].units = newUnits;
+                            changes.push(`Quantidade alterada de '${oldQty}' para '${quantity}'`);
+                            const diff = quantity - item.units.length;
+                            if (diff > 0) {
+                                for (let i = 0; i < diff; i++) {
+                                    item.units.push({ unitId: item.units.length + 1, status: 'disponivel' });
+                                }
+                            } else if (diff < 0) {
+                                let toRemove = Math.abs(diff);
+                                item.units = item.units.filter(unit => {
+                                    if (unit.status === 'disponivel' && toRemove > 0) {
+                                        toRemove--;
+                                        return false;
+                                    }
+                                    return true;
+                                });
+                            }
+                        } else if (item.quantity !== quantity) {
+                             changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
                         }
-                        addHistoryRecord(inventoryItems[itemIndex], 'Edição', `Item editado. Antigo ID: ${oldItem.id}, Novo ID: ${itemId}, Nome: ${itemName}, Qtd: ${itemQuantity}, Tipo: ${itemType}.`);
+                        
+                        if (changes.length > 0) {
+                            addHistoryRecord(item, 'Edição', changes.join(', '));
+                        }
+
+                        item.id = newId;
+                        item.name = name;
+                        item.quantity = quantity;
+                        item.type = type;
+                        if (type === 'atribuido') item.class = itemClass;
+                        item.imageData = imageBase64 || item.imageData;
                     }
-                } else { // Adição
+                } else { // Adicionar item
                     const newItem = {
-                        id: itemId,
-                        name: itemName,
-                        quantity: itemQuantity,
-                        type: itemType,
-                        class: itemType === 'atribuido' ? itemClass : undefined,
-                        imageData: imageBase64,
-                        history: [],
-                        isDeleted: false
+                        id: newId, name, quantity, type, imageData: imageBase64, history: [], isDeleted: false
                     };
-                    if (itemType === 'ferramenta' || itemType === 'atribuido') {
+                    if (type === 'ferramenta' || type === 'atribuido') {
                         newItem.units = [];
-                        for (let i = 1; i <= itemQuantity; i++) {
-                            newItem.units.push({ unitId: i, status: 'disponivel', identifier: '' });
+                        for (let i = 1; i <= quantity; i++) {
+                            newItem.units.push({ unitId: i, status: 'disponivel' });
                         }
                     }
+                    if (type === 'atribuido') {
+                        newItem.class = itemClass;
+                    }
+                    addHistoryRecord(newItem, 'Criação', `Item criado com ${quantity} unidades.`);
                     inventoryItems.push(newItem);
-                    addHistoryRecord(newItem, 'Adição', `Novo item adicionado: ${itemName} (ID: ${itemId}, Qtd: ${itemQuantity}, Tipo: ${itemType}).`);
                 }
                 saveInventory();
                 loadInventory();
                 closeItemModal();
             });
-
+            
             stockForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const itemId = document.getElementById('stockItemId').value;
+                const id = document.getElementById('stockItemId').value;
                 const type = document.getElementById('stockType').value;
                 const quantity = parseInt(document.getElementById('stockQuantity').value);
-
-                const item = inventoryItems.find(i => i.id === itemId);
+                
+                const item = inventoryItems.find(i => i.id == id);
                 if (item) {
-                    if (type === 'Entrada') {
-                        item.quantity += quantity;
-                        addHistoryRecord(item, 'Entrada de Estoque', `Adicionado ${quantity} unidades. Nova quantidade: ${item.quantity}.`);
-                    } else if (type === 'Saída') {
-                        if (item.quantity >= quantity) {
-                            item.quantity -= quantity;
-                            addHistoryRecord(item, 'Saída de Estoque', `Removido ${quantity} unidades. Nova quantidade: ${item.quantity}.`);
-                        } else {
-                            alert('Quantidade em estoque insuficiente.');
-                            return;
-                        }
+                    if (type === 'Saída' && item.quantity < quantity) {
+                        alert('Quantidade de saída excede o estoque atual.');
+                        return;
                     }
+                    
+                    const oldQty = item.quantity;
+                    item.quantity = type === 'Entrada' ? item.quantity + quantity : item.quantity - quantity;
+                    const details = `Quantidade: ${quantity}. Estoque alterado de ${oldQty} para ${item.quantity}.`;
+                    addHistoryRecord(item, type, details);
+                    
                     saveInventory();
                     loadInventory();
                     closeStockModal();
@@ -1163,7 +1034,6 @@
                 const to = document.getElementById('assignUnitTo').value;
                 const period = document.getElementById('assignUnitPeriod').value;
                 const isIndefinite = document.getElementById('assignUnitIndefinite').checked;
-                const startDate = document.getElementById('assignUnitDate').value;
                 const identifier = document.getElementById('assignUnitIdentifier').value;
 
                 const item = inventoryItems.find(i => i.id === itemId);
@@ -1172,22 +1042,32 @@
                 if (item.type === 'ferramenta') {
                     unit.status = 'emprestada';
                     unit.lentTo = to;
-                    unit.loanDate = startDate ? new Date(startDate).toISOString() : new Date().toISOString();
+                    unit.loanDate = new Date().toISOString();
                     if (isIndefinite) {
-                        unit.loanDurationDays = -1; // -1 indica indefinido
-                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (prazo indefinido) em ${new Date(unit.loanDate).toLocaleDateString('pt-BR')}.`);
+                        unit.dueDate = 'Indefinido';
+                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (prazo indefinido).`);
                     } else {
-                        unit.loanDurationDays = parseInt(period);
-                        const endDate = new Date(unit.loanDate);
-                        endDate.setDate(endDate.getDate() + parseInt(period));
-                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (${period} dias) de ${new Date(unit.loanDate).toLocaleDateString('pt-BR')} até ${endDate.toLocaleDateString('pt-BR')}.`);
+                        unit.dueDate = period;
+                        addHistoryRecord(item, 'Empréstimo', `Unidade ${unitId} emprestada para ${to} (devolução em ${new Date(period).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}).`);
                     }
                 } else { // Atribuído
+                    const fleet = fleets.find(f => f.chassi === to);
+                    const alreadyAssigned = inventoryItems.some(invItem => 
+                        invItem.type === 'atribuido' &&
+                        invItem.class === item.class &&
+                        invItem.id !== item.id && // Exclui o próprio item da verificação
+                        invItem.units.some(u => u.assignedTo === to)
+                    );
+
+                    if (alreadyAssigned) {
+                        alert(`Erro: A frota '${fleet.name}' já possui um item da classe '${item.class}' atribuído.`);
+                        return;
+                    }
+
                     unit.status = 'atribuido';
                     unit.assignedTo = to;
                     unit.identifier = identifier;
-                    const fleetName = fleets.find(f => f.chassi === to)?.name || 'N/A';
-                    addHistoryRecord(item, 'Atribuição', `Unidade ${unitId} (ID: ${identifier}) atribuída à frota ${fleetName} (${to}).`);
+                    addHistoryRecord(item, 'Atribuição', `Unidade ${unitId} (ID: ${identifier}) atribuída a ${fleet.name}.`);
                 }
 
                 saveInventory();
@@ -1236,7 +1116,7 @@
                     unit.status = 'disponivel';
                     delete unit.lentTo;
                     delete unit.loanDate;
-                    delete unit.loanDurationDays;
+                    delete unit.dueDate;
                     saveInventory();
                     loadInventory();
                     openUnitManagementModal(item);
@@ -1250,51 +1130,14 @@
             window.handleUnassignUnit = (itemId, unitId) => {
                 const item = inventoryItems.find(i => i.id === itemId);
                 const unit = item.units.find(u => u.unitId === unitId);
-                const fleetName = fleets.find(f => f.chassi === unit.assignedTo)?.name || 'N/A';
-                if (confirm(`Remover atribuição da Unidade ${unitId} da frota ${fleetName}?`)) {
-                    addHistoryRecord(item, 'Remoção de Atribuição', `Atribuição da Unidade ${unitId} (ID: ${unit.identifier}) removida da frota ${fleetName} (${unit.assignedTo}).`);
+                if (confirm(`Remover atribuição da Unidade ${unitId} de ${unit.assignedTo}?`)) {
+                    addHistoryRecord(item, 'Remoção de Atribuição', `Atribuição da Unidade ${unitId} (ID: ${unit.identifier}) removida de ${unit.assignedTo}.`);
                     unit.status = 'disponivel';
                     delete unit.assignedTo;
                     delete unit.identifier;
                     saveInventory();
                     loadInventory();
                     openUnitManagementModal(item);
-                    // Update assignment tab if it's open
-                    if (selectedFleet.value) {
-                        updateAssignedItemsList(selectedFleet.value);
-                    }
-                }
-            };
-
-            window.handleEditUnitIdentifier = (itemId, unitId, currentIdentifier) => {
-                const newIdentifier = prompt(`Editar Nº de Série/Cód. da Unidade ${unitId}. Atual: ${currentIdentifier || 'N/A'}\nNovo Nº de Série/Cód.:`);
-                if (newIdentifier !== null) { // User didn't cancel
-                    const item = inventoryItems.find(i => i.id === itemId);
-                    const unit = item.units.find(u => u.unitId === unitId);
-                    if (unit) {
-                        unit.identifier = newIdentifier.trim();
-                        addHistoryRecord(item, 'Edição de Identificador', `Nº de Série/Cód. da Unidade ${unitId} alterado de '${currentIdentifier}' para '${newIdentifier}'.`);
-                        saveInventory();
-                        loadInventory();
-                        openUnitManagementModal(item); // Re-open to show updated identifier
-                        // Update assignment tab if it's open
-                        if (selectedFleet.value) {
-                            updateAssignedItemsList(selectedFleet.value);
-                        }
-                    }
-                }
-            };
-
-            window.handleRestoreItem = (id) => {
-                if (confirm('Tem certeza que deseja restaurar este item?')) {
-                    const item = inventoryItems.find(i => i.id === id);
-                    if (item) {
-                        item.isDeleted = false;
-                        addHistoryRecord(item, 'Restauração', 'Item restaurado do log de excluídos.');
-                        saveInventory();
-                        loadInventory();
-                        closeDeletedItemsModal();
-                    }
                 }
             };
 
@@ -1304,30 +1147,6 @@
             };
 
             // --- Lógica de Gerenciamento de Usuários ---
-            userForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const newUsername = document.getElementById('newUsername').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const newUserRole = document.getElementById('newUserRole').value;
-
-                let users = getUsers();
-                if (users.some(u => u.username === newUsername)) {
-                    alert('Nome de usuário já existe.');
-                    return;
-                }
-
-                if (newUserRole === 'admin' && currentUser.username !== SUPER_ADMIN_USERNAME) {
-                    alert('Apenas o admin principal pode adicionar outros admins.');
-                    return;
-                }
-
-                users.push({ username: newUsername, password: newPassword, role: newUserRole });
-                saveUsers(users);
-                renderUserList();
-                userForm.reset();
-                alert('Usuário adicionado com sucesso!');
-            });
-
             const renderUserList = () => {
                 userListDiv.innerHTML = '';
                 const users = getUsers();
@@ -1387,92 +1206,6 @@
                 }
             };
 
-            // --- Lógica de Gerenciamento de Frotas ---
-            const openFleetManagementModal = (fleet = null) => {
-                fleetForm.reset();
-                document.getElementById('originalChassi').value = '';
-
-                if (fleet) { // Modo Edição
-                    document.getElementById('originalChassi').value = fleet.chassi;
-                    document.getElementById('fleetName').value = fleet.name;
-                    document.getElementById('fleetModel').value = fleet.model;
-                    document.getElementById('fleetChassi').value = fleet.chassi;
-                    document.getElementById('fleetChassi').disabled = true; // Chassi não pode ser editado
-                } else { // Modo Adição
-                    document.getElementById('fleetChassi').disabled = false;
-                }
-                renderFleetList();
-                updateFleetSelector();
-                fleetManagementModal.classList.remove('hidden');
-            };
-
-            fleetForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const originalChassi = document.getElementById('originalChassi').value;
-                const fleetName = document.getElementById('fleetName').value;
-                const fleetModel = document.getElementById('fleetModel').value;
-                const fleetChassi = document.getElementById('fleetChassi').value;
-
-                if (originalChassi) { // Edição
-                    const fleetIndex = fleets.findIndex(f => f.chassi === originalChassi);
-                    if (fleetIndex !== -1) {
-                        fleets[fleetIndex] = { name: fleetName, model: fleetModel, chassi: fleetChassi };
-                        alert('Frota atualizada com sucesso!');
-                    }
-                } else { // Adição
-                    if (fleets.some(f => f.chassi === fleetChassi)) {
-                        alert('Chassi já cadastrado. Por favor, use um chassi único.');
-                        return;
-                    }
-                    fleets.push({ name: fleetName, model: fleetModel, chassi: fleetChassi });
-                    alert('Frota adicionada com sucesso!');
-                }
-                saveFleets();
-                renderFleetList();
-                updateFleetSelector();
-                fleetForm.reset();
-                document.getElementById('fleetChassi').disabled = false; // Re-enable for new entry
-            });
-
-            const renderFleetList = () => {
-                fleetList.innerHTML = '';
-                if (fleets.length === 0) {
-                    fleetList.innerHTML = `<p class="text-center text-gray-500">Nenhuma frota cadastrada.</p>`;
-                    return;
-                }
-                fleets.forEach(fleet => {
-                    const fleetDiv = document.createElement('div');
-                    fleetDiv.className = 'flex justify-between items-center p-2 border rounded-md';
-                    fleetDiv.innerHTML = `
-                        <div>
-                            <p class="font-semibold">${fleet.name}</p>
-                            <p class="text-sm text-gray-500">Modelo: ${fleet.model}</p>
-                            <p class="text-sm text-gray-500">Chassi: ${fleet.chassi}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="handleEditFleet('${fleet.chassi}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Editar Frota"><i class="fas fa-edit"></i></button>
-                            <button onclick="handleDeleteFleet('${fleet.chassi}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Frota"><i class="fas fa-trash"></i></button>
-                        </div>
-                    `;
-                    fleetList.appendChild(fleetDiv);
-                });
-            };
-
-            window.handleEditFleet = (chassi) => {
-                const fleet = fleets.find(f => f.chassi === chassi);
-                if (fleet) openFleetManagementModal(fleet);
-            };
-
-            window.handleDeleteFleet = (chassi) => {
-                if (confirm(`Tem certeza que deseja excluir a frota com Chassi: ${chassi}?`)) {
-                    fleets = fleets.filter(f => f.chassi !== chassi);
-                    saveFleets();
-                    renderFleetList();
-                    updateFleetSelector();
-                    alert('Frota excluída com sucesso!');
-                }
-            };
-
             // --- Lógica de Ações de Admin ---
             clearLogBtn.addEventListener('click', () => {
                 const password = prompt('Para confirmar a limpeza de TODO o histórico, digite sua senha de admin:');
@@ -1521,19 +1254,18 @@
                                             'Nome do Item': item.name,
                                             'Unidade': unit.unitId,
                                             'Emprestada para': unit.lentTo,
-                                            'Período': unit.loanDurationDays === -1 ? 'Indefinido' : `${unit.loanDurationDays} dias`,
-                                            'Data Empréstimo': unit.loanDate ? new Date(unit.loanDate).toLocaleDateString('pt-BR') : 'N/A',
-                                            'Data Devolução Prevista': (unit.loanDate && unit.loanDurationDays !== -1) ? new Date(new Date(unit.loanDate).setDate(new Date(unit.loanDate).getDate() + unit.loanDurationDays)).toLocaleDateString('pt-BR') : 'N/A'
+                                            'Data Devolução': unit.dueDate === 'Indefinido' ? 'Indefinido' : new Date(unit.dueDate).toLocaleDateString('pt-BR')
                                         });
                                     } else { // Atribuído
+                                        const fleet = fleets.find(f => f.chassi === unit.assignedTo);
                                         assignmentsData.push({
                                             'ID do Item': item.id,
                                             'Nome do Item': item.name,
                                             'Classe': item.class || '',
                                             'Unidade': unit.unitId,
-                                            'Identificador da Unidade': unit.identifier || '',
-                                            'Atribuído a (Chassi Frota)': unit.assignedTo,
-                                            'Nome da Frota': fleets.find(f => f.chassi === unit.assignedTo)?.name || 'N/A'
+                                            'Nº de Série': unit.identifier || '',
+                                            'Atribuído a Frota': fleet ? fleet.name : unit.assignedTo,
+                                            'Chassi da Frota': unit.assignedTo
                                         });
                                     }
                                 }
@@ -1602,13 +1334,13 @@
             const updateNotifications = () => {
                 const overdueLoans = [];
                 const now = new Date();
+                now.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas o dia
+
                 inventoryItems.forEach(item => {
                     if (item.type === 'ferramenta' && item.units) {
                         item.units.forEach(unit => {
-                            if (unit.status === 'emprestada' && unit.loanDurationDays !== -1) {
-                                const loanDate = new Date(unit.loanDate);
-                                const dueDate = new Date(loanDate);
-                                dueDate.setDate(loanDate.getDate() + unit.loanDurationDays);
+                            if (unit.status === 'emprestada' && unit.dueDate && unit.dueDate !== 'Indefinido') {
+                                const dueDate = new Date(unit.dueDate);
                                 if (now > dueDate) {
                                     const diffTime = Math.abs(now - dueDate);
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -1634,39 +1366,128 @@
                 notificationsBtn.onclick = () => openNotificationsModal(overdueLoans);
             };
 
+            closeNotificationsBtn.addEventListener('click', closeNotificationsModal);
+
             window.handleExtendLoan = (itemId, unitId) => {
-                const days = prompt("Prorrogar o empréstimo por quantos dias?");
-                if (days && !isNaN(parseInt(days)) && parseInt(days) > 0) {
+                const newDate = prompt("Digite a nova data de devolução (AAAA-MM-DD):");
+                if (newDate) {
                     const item = inventoryItems.find(i => i.id === itemId);
                     const unit = item.units.find(u => u.unitId === unitId);
                     
-                    if (unit.loanDurationDays === -1) { // Era indefinido
-                        unit.loanDate = new Date().toISOString(); // Reinicia a contagem
-                        unit.loanDurationDays = parseInt(days);
-                    } else {
-                        unit.loanDurationDays += parseInt(days);
-                    }
+                    unit.dueDate = newDate;
                     
-                    addHistoryRecord(item, 'Prorrogação', `Empréstimo da Unidade ${unitId} prorrogado por ${days} dias.`);
+                    addHistoryRecord(item, 'Prorrogação', `Empréstimo da Unidade ${unitId} prorrogado para ${new Date(newDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}.`);
                     saveInventory();
                     loadInventory();
                     openUnitManagementModal(item);
-                } else if (days !== null) {
-                    alert("Por favor, insira um número válido de dias.");
+                }
+            };
+            
+            // --- Lógica de Frotas ---
+            manageFleetsBtn.addEventListener('click', () => {
+                renderFleetList();
+                fleetManagementModal.classList.remove('hidden');
+            });
+            closeFleetManagementBtn.addEventListener('click', () => fleetManagementModal.classList.add('hidden'));
+
+            fleetForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const originalChassi = document.getElementById('originalChassi').value;
+                const fleetData = {
+                    name: document.getElementById('fleetName').value,
+                    model: document.getElementById('fleetModel').value,
+                    chassi: document.getElementById('fleetChassi').value
+                };
+
+                if (originalChassi) { // Editando
+                    const index = fleets.findIndex(f => f.chassi === originalChassi);
+                    fleets[index] = fleetData;
+                } else { // Adicionando
+                    if (fleets.some(f => f.chassi === fleetData.chassi)) {
+                        alert("Erro: Já existe uma frota com este Chassi.");
+                        return;
+                    }
+                    fleets.push(fleetData);
+                }
+                saveFleets();
+                fleetForm.reset();
+                document.getElementById('originalChassi').value = '';
+                renderFleetList();
+            });
+
+            const renderFleetList = () => {
+                fleetList.innerHTML = '';
+                fleets.forEach(fleet => {
+                    const fleetDiv = document.createElement('div');
+                    fleetDiv.className = 'flex justify-between items-center p-2 border rounded-md';
+                    fleetDiv.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${fleet.name} (${fleet.model})</p>
+                            <p class="text-sm text-gray-500">Chassi: ${fleet.chassi}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="handleViewFleetItems('${fleet.chassi}')" class="text-green-500 hover:text-green-700 text-sm" title="Ver Itens Atribuídos"><i class="fas fa-eye"></i></button>
+                            <button onclick="handleEditFleet('${fleet.chassi}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Editar Frota"><i class="fas fa-edit"></i></button>
+                            <button onclick="handleDeleteFleet('${fleet.chassi}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Frota"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                    fleetList.appendChild(fleetDiv);
+                });
+            };
+
+            window.handleEditFleet = (chassi) => {
+                const fleet = fleets.find(f => f.chassi === chassi);
+                if (fleet) {
+                    document.getElementById('originalChassi').value = fleet.chassi;
+                    document.getElementById('fleetName').value = fleet.name;
+                    document.getElementById('fleetModel').value = fleet.model;
+                    document.getElementById('fleetChassi').value = fleet.chassi;
+                }
+            };
+            
+            window.handleDeleteFleet = (chassi) => {
+                if (confirm(`Tem certeza que deseja excluir a frota com chassi ${chassi}?`)) {
+                    fleets = fleets.filter(f => f.chassi !== chassi);
+                    saveFleets();
+                    renderFleetList();
                 }
             };
 
-            // --- Inicialização ---
-            loginBackdrop.classList.remove('hidden');
+            window.handleViewFleetItems = (chassi) => {
+                const fleet = fleets.find(f => f.chassi === chassi);
+                fleetItemsName.textContent = `${fleet.name} (${fleet.model})`;
+                fleetItemsList.innerHTML = '';
+                
+                const assignedItems = inventoryItems.filter(item => 
+                    item.type === 'atribuido' &&
+                    item.units.some(unit => unit.assignedTo === chassi)
+                );
 
-            // Garante que o super admin existe
-            let currentUsers = getUsers();
-            if (!currentUsers.some(u => u.username === SUPER_ADMIN_USERNAME)) {
-                currentUsers.push({ username: SUPER_ADMIN_USERNAME, password: 'admin', role: 'admin' });
-                saveUsers(currentUsers);
-            }
+                if (assignedItems.length === 0) {
+                    fleetItemsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum item atribuído a esta frota.</p>';
+                } else {
+                    assignedItems.forEach(item => {
+                        item.units.forEach(unit => {
+                            if (unit.assignedTo === chassi) {
+                                const itemDiv = document.createElement('div');
+                                itemDiv.className = 'p-2 border-b';
+                                itemDiv.innerHTML = `
+                                    <p class="font-semibold">${item.name} (Unidade ${unit.unitId})</p>
+                                    <p class="text-sm text-gray-600">Nº de Série: ${unit.identifier || 'Não informado'}</p>
+                                `;
+                                fleetItemsList.appendChild(itemDiv);
+                            }
+                        });
+                    });
+                }
+                fleetItemsModal.classList.remove('hidden');
+            };
+            closeFleetItemsBtn.addEventListener('click', () => fleetItemsModal.classList.add('hidden'));
+
+            // --- Inicialização ---
+            initializeAdmin();
+            checkAuth();
         });
     </script>
 </body>
 </html>
-
