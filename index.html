@@ -97,16 +97,44 @@
             </div>
         </header>
 
-        <!-- Barra de Pesquisa e Botões de Ação -->
-        <div class="flex flex-wrap gap-3 mb-6">
-            <div class="relative flex-grow">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                    <i class="fas fa-search text-gray-400"></i>
-                </span>
-                <input type="text" id="searchInput" placeholder="Pesquisar por nome do item..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <!-- Barra de Pesquisa e Filtros -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border">
+            <!-- Campo de Pesquisa Geral -->
+            <div class="lg:col-span-2">
+                <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Pesquisar por ID, Nome ou Classe</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-search text-gray-400"></i></span>
+                    <input type="text" id="searchInput" placeholder="Digite para pesquisar..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
-            <button id="addItemBtn" class="btn btn-primary"><i class="fas fa-plus mr-2"></i>Adicionar Item</button>
-            <button id="exportBtn" class="btn btn-green admin-editor-only"><i class="fas fa-file-export mr-2"></i>Exportar</button>
+            <!-- Filtro por Tipo -->
+            <div>
+                <label for="filterType" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Tipo</label>
+                <select id="filterType" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">Todos os Tipos</option>
+                    <option value="consumivel">Consumível</option>
+                    <option value="ferramenta">Ferramenta</option>
+                    <option value="atribuido">Atribuído</option>
+                </select>
+            </div>
+            <!-- Controles de Ordenação -->
+            <div>
+                <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                <div class="flex gap-2">
+                    <select id="sortBy" class="flex-grow py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="id">ID</option>
+                        <option value="name">Nome</option>
+                    </select>
+                    <button id="sortOrderBtn" class="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-100" title="Mudar Ordem">
+                        <i id="sortOrderIcon" class="fas fa-arrow-down-1-9"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mb-4">
+             <button id="addItemBtn" class="btn btn-primary"><i class="fas fa-plus mr-2"></i>Adicionar Item</button>
+             <button id="exportBtn" class="btn btn-green admin-editor-only"><i class="fas fa-file-export mr-2"></i>Exportar</button>
         </div>
 
         <!-- Tabela de Inventário -->
@@ -177,6 +205,7 @@
         </div>
     </div>
 
+    <!-- Outros Modais (sem alterações) -->
     <!-- Modal para Entrada/Saída de Estoque (Consumíveis) -->
     <div id="stockModal" class="modal-backdrop hidden">
         <div class="modal-content">
@@ -201,9 +230,7 @@
         <div class="modal-content large-modal-content">
             <h2 id="unitManagementTitle" class="text-2xl font-bold mb-2">Gerenciar Unidades</h2>
             <p class="mb-4 text-gray-600"><strong>Item:</strong> <span id="unitManagementItemName"></span></p>
-            <div id="unitList" class="max-h-96 overflow-y-auto space-y-2">
-                <!-- Lista de unidades será preenchida aqui -->
-            </div>
+            <div id="unitList" class="max-h-96 overflow-y-auto space-y-2"></div>
             <div class="flex justify-end mt-6">
                 <button type="button" id="closeUnitManagementBtn" class="btn btn-gray">Fechar</button>
             </div>
@@ -271,9 +298,7 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-2 border-b pb-2">Frotas Cadastradas</h3>
-                    <div id="fleetList" class="mt-4 max-h-64 overflow-y-auto space-y-2">
-                        <!-- Lista de frotas será preenchida aqui -->
-                    </div>
+                    <div id="fleetList" class="mt-4 max-h-64 overflow-y-auto space-y-2"></div>
                 </div>
             </div>
             <div class="flex justify-end mt-6">
@@ -287,16 +312,14 @@
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-2">Itens Atribuídos</h2>
             <p class="mb-4 text-gray-600"><strong>Frota:</strong> <span id="fleetItemsName"></span></p>
-            <div id="fleetItemsList" class="max-h-96 overflow-y-auto space-y-2">
-                <!-- Lista de itens atribuídos aqui -->
-            </div>
+            <div id="fleetItemsList" class="max-h-96 overflow-y-auto space-y-2"></div>
             <div class="flex justify-end mt-6">
                 <button type="button" id="closeFleetItemsBtn" class="btn btn-gray">Fechar</button>
             </div>
         </div>
     </div>
     
-    <!-- Modal de Gerenciamento de Usuários (Apenas Admin/Editor) -->
+    <!-- Modal de Gerenciamento de Usuários -->
     <div id="userManagementModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Gerenciar Usuários</h2>
@@ -325,9 +348,7 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-2 border-b pb-2">Usuários Existentes</h3>
-                    <div id="userList" class="mt-4 max-h-64 overflow-y-auto space-y-2">
-                        <!-- Lista de usuários será preenchida aqui -->
-                    </div>
+                    <div id="userList" class="mt-4 max-h-64 overflow-y-auto space-y-2"></div>
                 </div>
             </div>
             <div class="flex justify-end mt-6">
@@ -351,9 +372,7 @@
                             <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Detalhes</th>
                         </tr>
                     </thead>
-                    <tbody id="historyLogBody" class="text-gray-700 text-sm">
-                        <!-- Registros do histórico aqui -->
-                    </tbody>
+                    <tbody id="historyLogBody" class="text-gray-700 text-sm"></tbody>
                 </table>
             </div>
             <div class="flex justify-end mt-6">
@@ -362,7 +381,7 @@
         </div>
     </div>
     
-    <!-- Modal de Itens Excluídos (Apenas Admin/Editor) -->
+    <!-- Modal de Itens Excluídos -->
     <div id="deletedItemsModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Itens Excluídos</h2>
@@ -376,9 +395,7 @@
                             <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Data da Exclusão</th>
                         </tr>
                     </thead>
-                    <tbody id="deletedItemsBody" class="text-gray-700 text-sm">
-                        <!-- Itens excluídos aqui -->
-                    </tbody>
+                    <tbody id="deletedItemsBody" class="text-gray-700 text-sm"></tbody>
                 </table>
             </div>
             <div class="flex justify-end mt-6">
@@ -391,9 +408,7 @@
     <div id="notificationsModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Notificações de Empréstimos Vencidos</h2>
-            <div id="notificationsList" class="max-h-96 overflow-y-auto">
-                <!-- Lista de notificações aqui -->
-            </div>
+            <div id="notificationsList" class="max-h-96 overflow-y-auto"></div>
             <div class="flex justify-end mt-6">
                 <button type="button" id="closeNotificationsBtn" class="btn btn-gray">Fechar</button>
             </div>
@@ -419,6 +434,11 @@
             
             const inventoryTableBody = document.getElementById('inventoryTableBody');
             const searchInput = document.getElementById('searchInput');
+            const filterType = document.getElementById('filterType');
+            const sortBy = document.getElementById('sortBy');
+            const sortOrderBtn = document.getElementById('sortOrderBtn');
+            const sortOrderIcon = document.getElementById('sortOrderIcon');
+
             const addItemBtn = document.getElementById('addItemBtn');
             const itemModal = document.getElementById('itemModal');
             const modalTitle = document.getElementById('modalTitle');
@@ -487,6 +507,7 @@
             let fleets = [];
             let imageBase64 = null;
             let currentUser = null;
+            let currentSortOrder = 'asc'; // 'asc' ou 'desc'
             const SUPER_ADMIN_USERNAME = 'GABRIELMAG';
 
             // --- Funções de Armazenamento ---
@@ -573,18 +594,54 @@
                 });
             };
 
-            // --- Funções da Tabela ---
-            const renderTable = (filter = '') => {
+            // --- Funções da Tabela (com Filtros e Ordenação) ---
+            const renderTable = () => {
                 inventoryTableBody.innerHTML = '';
-                const activeItems = inventoryItems.filter(item => !item.isDeleted);
-                const filteredItems = activeItems.filter(item => 
-                    item && typeof item.name === 'string' && item.name.toLowerCase().includes(filter.toLowerCase())
-                );
+                
+                // 1. Obter valores dos filtros e da ordenação
+                const searchValue = searchInput.value.toLowerCase();
+                const typeValue = filterType.value;
+                const sortByValue = sortBy.value;
 
+                // 2. Filtrar itens
+                let filteredItems = inventoryItems.filter(item => !item.isDeleted);
+
+                if (searchValue) {
+                    filteredItems = filteredItems.filter(item => 
+                        (item.name && item.name.toLowerCase().includes(searchValue)) ||
+                        (item.id && item.id.toLowerCase().includes(searchValue)) ||
+                        (item.class && item.class.toLowerCase().includes(searchValue))
+                    );
+                }
+
+                if (typeValue !== 'all') {
+                    filteredItems = filteredItems.filter(item => item.type === typeValue);
+                }
+
+                // 3. Ordenar itens
+                filteredItems.sort((a, b) => {
+                    let valA, valB;
+                    if (sortByValue === 'id') {
+                        valA = parseInt(a.id, 10) || 0;
+                        valB = parseInt(b.id, 10) || 0;
+                        return valA - valB;
+                    } else { // 'name'
+                        valA = a.name.toLowerCase();
+                        valB = b.name.toLowerCase();
+                        return valA.localeCompare(valB);
+                    }
+                });
+
+                if (currentSortOrder === 'desc') {
+                    filteredItems.reverse();
+                }
+
+                // 4. Renderizar a tabela
                 if (filteredItems.length === 0) {
-                    inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">Nenhum item encontrado.</td></tr>`;
+                    inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">Nenhum item encontrado com os filtros atuais.</td></tr>`;
                     return;
                 }
+
                 filteredItems.forEach(item => {
                     const row = document.createElement('tr');
                     row.className = `border-b hover:bg-gray-100 ${item.quantity === 0 && item.type === 'consumivel' ? 'bg-gray-50 text-gray-400' : ''}`;
@@ -678,7 +735,8 @@
 
             const closeItemModal = () => itemModal.classList.add('hidden');
             
-            const openStockModal = (item, type) => {
+            // ... (O restante dos modais e suas funções permanecem os mesmos) ...
+             const openStockModal = (item, type) => {
                 stockForm.reset();
                 stockModalTitle.textContent = `Registrar ${type} de ${item.name}`;
                 document.getElementById('stockItemId').value = item.id;
@@ -850,6 +908,7 @@
             };
             const closeNotificationsModal = () => notificationsModal.classList.add('hidden');
 
+
             // --- Manipuladores de Eventos ---
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -871,6 +930,28 @@
                 currentUser = null;
                 checkAuth();
             });
+
+            // Eventos para filtros e ordenação
+            searchInput.addEventListener('input', renderTable);
+            filterType.addEventListener('change', renderTable);
+            sortBy.addEventListener('change', () => {
+                updateSortIcon();
+                renderTable();
+            });
+            sortOrderBtn.addEventListener('click', () => {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                updateSortIcon();
+                renderTable();
+            });
+            
+            const updateSortIcon = () => {
+                const isSortById = sortBy.value === 'id';
+                if (currentSortOrder === 'asc') {
+                    sortOrderIcon.className = isSortById ? 'fas fa-arrow-down-1-9' : 'fas fa-arrow-down-a-z';
+                } else {
+                    sortOrderIcon.className = isSortById ? 'fas fa-arrow-up-9-1' : 'fas fa-arrow-up-z-a';
+                }
+            };
 
             manageUsersBtn.addEventListener('click', openUserManagementModal);
             closeUserManagementBtn.addEventListener('click', closeUserManagementModal);
@@ -896,7 +977,6 @@
                 renderUserList();
             });
             
-            searchInput.addEventListener('input', (e) => renderTable(e.target.value));
             addItemBtn.addEventListener('click', () => openItemModal());
             cancelItemBtn.addEventListener('click', closeItemModal);
             cancelStockBtn.addEventListener('click', closeStockModal);
@@ -930,8 +1010,9 @@
                 const type = document.getElementById('itemType').value;
                 const itemClass = document.getElementById('itemClass').value;
 
-                if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
-                    alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
+                // [CORREÇÃO] Verifica se o ID já existe em QUALQUER item, incluindo os excluídos.
+                if (originalId !== newId && inventoryItems.some(i => i.id === newId)) {
+                    alert('Este ID já foi utilizado. Mesmo que o item original tenha sido excluído, o ID não pode ser reutilizado para manter a integridade do histórico. Por favor, escolha outro.');
                     return;
                 }
 
@@ -1084,12 +1165,12 @@
 
             window.handleDelete = (id) => {
                 if (confirm('Tem certeza que deseja remover este item? Ele será movido para o log de excluídos.')) {
-                    const item = inventoryItems.find(i => i.id === id);
-                    if (item) {
-                        item.isDeleted = true;
-                        addHistoryRecord(item, 'Exclusão', 'Item marcado como excluído.');
+                    const itemIndex = inventoryItems.findIndex(i => i.id === id);
+                    if (itemIndex > -1) {
+                        inventoryItems[itemIndex].isDeleted = true;
+                        addHistoryRecord(inventoryItems[itemIndex], 'Exclusão', 'Item marcado como excluído.');
                         saveInventory();
-                        loadInventory();
+                        renderTable(); // Apenas renderiza novamente, sem recarregar tudo
                     }
                 }
             };
@@ -1487,6 +1568,7 @@
             // --- Inicialização ---
             initializeAdmin();
             checkAuth();
+            updateSortIcon();
         });
     </script>
 </body>
