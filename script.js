@@ -1,26 +1,16 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { 
-    getAuth, 
-    onAuthStateChanged, 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword,
-    signOut,
-    sendEmailVerification
-} from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { 
     getFirestore, 
     collection, 
     doc, 
-    getDoc,
     getDocs, 
     setDoc, 
     addDoc,
     updateDoc,
     deleteDoc,
     onSnapshot,
-    query,
-    where
+    query
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -36,7 +26,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -125,51 +114,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Estado da Aplicação ---
     let inventoryItems = [];
     let fleets = [];
-    let users = [];
     let imageBase64 = null;
     let currentUser = null;
-    let currentUserData = null; // Para armazenar dados do Firestore (role, etc)
+    const SUPER_ADMIN_USERNAME = 'GABRIELMAG';
+
+    // --- Funções de Armazenamento ---
+    const getUsers = () => JSON.parse(localStorage.getItem('appUsers')) || [];
+    const saveUsers = (users) => localStorage.setItem('appUsers', JSON.stringify(users));
     
     // --- Funções de Autenticação e UI ---
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            if (!user.emailVerified) {
-                alert("Por favor, verifique seu email para continuar. Clique no link que enviamos para você.");
-                await signOut(auth);
-                return;
-            }
-            currentUser = user;
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-                currentUserData = userDocSnap.data();
-                showApp();
-            } else {
-                console.error("Documento do usuário não encontrado no Firestore. Deslogando.");
-                await signOut(auth);
-            }
+    const initializeAdmin = () => {
+        let users = getUsers();
+        if (!users.some(u => u.username === SUPER_ADMIN_USERNAME)) {
+            users.push({ username: SUPER_ADMIN_USERNAME, password: '550323', role: 'admin' });
+            saveUsers(users);
+        }
+    };
+
+    const checkAuth = () => {
+        const userSession = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (userSession) {
+            currentUser = userSession;
+            showApp();
         } else {
-            currentUser = null;
-            currentUserData = null;
             showLogin();
         }
-    });
+    };
 
     const showLogin = () => {
         loginBackdrop.classList.remove('hidden');
         appContainer.classList.add('hidden');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
     };
 
     const showApp = () => {
         loginBackdrop.classList.add('hidden');
         appContainer.classList.remove('hidden');
-        loggedInUserSpan.textContent = currentUserData.username;
-        userRoleSpan.textContent = currentUserData.role.charAt(0).toUpperCase() + currentUserData.role.slice(1);
+        loggedInUserSpan.textContent = currentUser.username;
+        userRoleSpan.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
         
-        const isAdmin = currentUserData.role === 'admin';
-        const isEditor = currentUserData.role === 'editor';
+        const isAdmin = currentUser.role === 'admin';
+        const isEditor = currentUser.role === 'editor';
 
         document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
         document.querySelectorAll('.admin-editor-only').forEach(el => el.classList.toggle('hidden', !(isAdmin || isEditor)));
@@ -184,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         item.history.unshift({
             timestamp: new Date().toISOString(),
-            user: currentUserData.username,
+            user: currentUser.username,
             action: action,
             details: details
         });
@@ -245,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.className = `border-b hover:bg-gray-100 ${item.quantity === 0 && item.type === 'consumivel' ? 'bg-gray-50 text-gray-400' : ''}`;
             const lastChange = item.history ? item.history[0] : null;
             
-            const isAdminOrEditor = currentUserData.role === 'admin' || currentUserData.role === 'editor';
+            const isAdminOrEditor = currentUser.role === 'admin' || currentUser.role === 'editor';
             
             let statusOrQtyCell = '';
             let actionButtons = `<button onclick="handleHistory('${item.docId}')" class="text-purple-500 hover:text-purple-700" title="Ver Histórico"><i class="fas fa-history"></i></button>`;
@@ -323,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('itemId').value = nextId;
         }
         
-        const isUserRole = currentUserData.role === 'user';
+        const isUserRole = currentUser.role === 'user';
         document.getElementById('itemId').disabled = isUserRole && !!item;
         document.getElementById('itemName').disabled = isUserRole && !!item;
         document.getElementById('itemType').disabled = isUserRole && !!item;
@@ -434,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeAssignUnitModal = () => assignUnitModal.classList.add('hidden');
     
     const openUserManagementModal = () => {
-        adminRoleOption.classList.toggle('hidden', currentUserData.username !== SUPER_ADMIN_USERNAME);
+        adminRoleOption.classList.toggle('hidden', currentUser.username !== SUPER_ADMIN_USERNAME);
         renderUserList();
         userManagementModal.classList.remove('hidden');
     };
@@ -506,20 +490,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeNotificationsModal = () => notificationsModal.classList.add('hidden');
 
     // --- Manipuladores de Eventos ---
-    loginForm.addEventListener('submit', async (e) => {
+    loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
+        const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-            alert('Email ou senha inválidos.');
-            console.error("Erro de login:", error);
+        const users = getUsers();
+        const user = users.find(u => u.username === username && u.password === password);
+
+        if (user) {
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
+            checkAuth();
+        } else {
+            alert('Usuário ou senha inválidos.');
         }
     });
 
-    logoutBtn.addEventListener('click', async () => {
-        await signOut(auth);
+    logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('currentUser');
+        currentUser = null;
+        checkAuth();
     });
 
     manageUsersBtn.addEventListener('click', openUserManagementModal);
@@ -527,31 +516,23 @@ document.addEventListener('DOMContentLoaded', () => {
     viewDeletedBtn.addEventListener('click', openDeletedItemsModal);
     closeDeletedItemsBtn.addEventListener('click', closeDeletedItemsModal);
 
-    registerUserForm.addEventListener('submit', async (e) => {
+    registerUserForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const username = document.getElementById('newUsername').value;
-        const email = document.getElementById('newUserEmail').value;
-        const password = document.getElementById('newPassword').value;
-        const role = document.getElementById('newUserRole').value;
-        
-        try {
-            // Primeiro, cria o usuário na autenticação do Firebase
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            // Depois, salva os detalhes (como nome e papel) no Firestore
-            const newUser = {
-                uid: userCredential.user.uid,
-                email: email,
-                username: username,
-                role: role
-            };
-            await setDoc(doc(db, "users", userCredential.user.uid), newUser);
-            alert(`Usuário '${username}' cadastrado com sucesso!`);
-            registerUserForm.reset();
-            renderUserList();
-        } catch (error) {
-            alert(`Erro ao cadastrar usuário: ${error.message}`);
-            console.error("Erro de cadastro:", error);
+        const newUsername = document.getElementById('newUsername').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const newUserRole = document.getElementById('newUserRole').value;
+        let users = getUsers();
+
+        if (users.some(u => u.username === newUsername)) {
+            alert('Este nome de usuário já existe.');
+            return;
         }
+
+        users.push({ username: newUsername, password: newPassword, role: newUserRole });
+        saveUsers(users);
+        alert(`Usuário '${newUsername}' cadastrado com sucesso!`);
+        registerUserForm.reset();
+        renderUserList();
     });
     
     searchInput.addEventListener('input', (e) => renderTable(e.target.value));
@@ -579,64 +560,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    itemForm.addEventListener('submit', async (e) => {
+    itemForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const docId = document.getElementById('originalItemId').value;
+        const originalId = document.getElementById('originalItemId').value;
         const newId = document.getElementById('itemId').value;
         const name = document.getElementById('itemName').value;
         const quantity = parseInt(document.getElementById('itemQuantity').value);
         const type = document.getElementById('itemType').value;
         const itemClass = document.getElementById('itemClass').value;
 
-        // Lógica de validação de ID único (precisa ser assíncrona com Firestore)
-        // ... (implementação mais robusta seria necessária para produção)
+        if (originalId !== newId && inventoryItems.some(i => i.id === newId && !i.isDeleted)) {
+            alert('Este ID já está em uso por um item ativo. Por favor, escolha outro.');
+            return;
+        }
 
-        if (docId) { // Atualizar item
-            const itemRef = doc(db, "inventory", docId);
-            const item = inventoryItems.find(i => i.docId === docId);
-            
-            let changes = [];
-            if (item.id !== newId) changes.push(`ID alterado de '${item.id}' para '${newId}'`);
-            if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
-            if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
-            if (item.class !== itemClass) changes.push(`Classe alterada para '${itemClass}'`);
-            
-            if ((item.type === 'atribuido' || item.type === 'ferramenta') && item.quantity !== quantity) {
-                const oldQty = item.quantity;
-                const inUseUnits = item.units.filter(u => u.status !== 'disponivel').length;
-                if (quantity < inUseUnits) {
-                    alert(`Não é possível reduzir a quantidade para ${quantity}, pois existem ${inUseUnits} unidades atualmente em uso.`);
-                    return;
-                }
-                changes.push(`Quantidade alterada de '${oldQty}' para '${quantity}'`);
-                const diff = quantity - item.units.length;
-                if (diff > 0) {
-                    for (let i = 0; i < diff; i++) {
-                        item.units.push({ unitId: item.units.length + 1, status: 'disponivel' });
+        if (originalId) { // Atualizar item
+            const item = inventoryItems.find(i => i.id == originalId);
+            if (item) {
+                let changes = [];
+                if (item.id !== newId) changes.push(`ID alterado de '${item.id}' para '${newId}'`);
+                if (item.name !== name) changes.push(`Nome alterado de '${item.name}' para '${name}'`);
+                if (item.type !== type) changes.push(`Tipo alterado de '${item.type}' para '${type}'`);
+                if (item.class !== itemClass) changes.push(`Classe alterada para '${itemClass}'`);
+                
+                if ((item.type === 'atribuido' || item.type === 'ferramenta') && item.quantity !== quantity) {
+                    const oldQty = item.quantity;
+                    const inUseUnits = item.units.filter(u => u.status !== 'disponivel').length;
+                    if (quantity < inUseUnits) {
+                        alert(`Não é possível reduzir a quantidade para ${quantity}, pois existem ${inUseUnits} unidades atualmente em uso.`);
+                        return;
                     }
-                } else if (diff < 0) {
-                    let toRemove = Math.abs(diff);
-                    item.units = item.units.filter(unit => {
-                        if (unit.status === 'disponivel' && toRemove > 0) {
-                            toRemove--;
-                            return false;
+                    changes.push(`Quantidade alterada de '${oldQty}' para '${quantity}'`);
+                    const diff = quantity - item.units.length;
+                    if (diff > 0) {
+                        for (let i = 0; i < diff; i++) {
+                            item.units.push({ unitId: item.units.length + 1, status: 'disponivel' });
                         }
-                        return true;
-                    });
+                    } else if (diff < 0) {
+                        let toRemove = Math.abs(diff);
+                        item.units = item.units.filter(unit => {
+                            if (unit.status === 'disponivel' && toRemove > 0) {
+                                toRemove--;
+                                return false;
+                            }
+                            return true;
+                        });
+                    }
+                } else if (item.quantity !== quantity) {
+                     changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
                 }
-            } else if (item.quantity !== quantity) {
-                 changes.push(`Quantidade alterada de '${item.quantity}' para '${quantity}'`);
-            }
-            
-            if (changes.length > 0) {
-                addHistoryRecord(item, 'Edição', changes.join(', '));
-            }
-            
-            const updatedData = { ...item, id: newId, name, quantity, type, imageData: imageBase64 || item.imageData };
-            if (type === 'atribuido') updatedData.class = itemClass;
-            delete updatedData.docId; // Não salvar o docId dentro do documento
-            await updateDoc(itemRef, updatedData);
+                
+                if (changes.length > 0) {
+                    addHistoryRecord(item, 'Edição', changes.join(', '));
+                }
 
+                item.id = newId;
+                item.name = name;
+                item.quantity = quantity;
+                item.type = type;
+                if (type === 'atribuido') item.class = itemClass;
+                item.imageData = imageBase64 || item.imageData;
+            }
         } else { // Adicionar item
             const newItem = {
                 id: newId, name, quantity, type, imageData: imageBase64, history: [], isDeleted: false
@@ -651,18 +635,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 newItem.class = itemClass;
             }
             addHistoryRecord(newItem, 'Criação', `Item criado com ${quantity} unidades.`);
-            await addDoc(collection(db, "inventory"), newItem);
+            inventoryItems.push(newItem);
         }
+        saveInventory();
+        loadInventory();
         closeItemModal();
     });
     
-    stockForm.addEventListener('submit', async (e) => {
+    stockForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const docId = document.getElementById('stockItemId').value;
+        const id = document.getElementById('stockItemId').value;
         const type = document.getElementById('stockType').value;
         const quantity = parseInt(document.getElementById('stockQuantity').value);
         
-        const item = inventoryItems.find(i => i.docId == docId);
+        const item = inventoryItems.find(i => i.id == id);
         if (item) {
             if (type === 'Saída' && item.quantity < quantity) {
                 alert('Quantidade de saída excede o estoque atual.');
@@ -670,21 +656,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const oldQty = item.quantity;
-            const newQty = type === 'Entrada' ? item.quantity + quantity : item.quantity - quantity;
-            const details = `Quantidade: ${quantity}. Estoque alterado de ${oldQty} para ${newQty}.`;
+            item.quantity = type === 'Entrada' ? item.quantity + quantity : item.quantity - quantity;
+            const details = `Quantidade: ${quantity}. Estoque alterado de ${oldQty} para ${item.quantity}.`;
             addHistoryRecord(item, type, details);
             
-            const itemRef = doc(db, "inventory", docId);
-            await updateDoc(itemRef, {
-                quantity: newQty,
-                history: item.history
-            });
-            
+            saveInventory();
+            loadInventory();
             closeStockModal();
         }
     });
 
-    assignUnitForm.addEventListener('submit', async (e) => {
+    assignUnitForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const itemId = document.getElementById('assignUnitItemId').value;
         const unitId = parseInt(document.getElementById('assignUnitUnitId').value);
@@ -693,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isIndefinite = document.getElementById('assignUnitIndefinite').checked;
         const identifier = document.getElementById('assignUnitIdentifier').value;
 
-        const item = inventoryItems.find(i => i.docId === itemId);
+        const item = inventoryItems.find(i => i.id === itemId);
         const unit = item.units.find(u => u.unitId === unitId);
 
         if (item.type === 'ferramenta') {
@@ -712,7 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const alreadyAssigned = inventoryItems.some(invItem => 
                 invItem.type === 'atribuido' &&
                 invItem.class === item.class &&
-                invItem.docId !== item.docId && // Exclui o próprio item da verificação
+                invItem.id !== item.id && // Exclui o próprio item da verificação
                 invItem.units.some(u => u.assignedTo === to)
             );
 
@@ -726,44 +708,38 @@ document.addEventListener('DOMContentLoaded', () => {
             unit.identifier = identifier;
             addHistoryRecord(item, 'Atribuição', `Unidade ${unitId} (ID: ${identifier}) atribuída a ${fleet.name}.`);
         }
-        
-        const itemRef = doc(db, "inventory", itemId);
-        await updateDoc(itemRef, {
-            units: item.units,
-            history: item.history
-        });
 
+        saveInventory();
+        loadInventory();
         openUnitManagementModal(item);
         closeAssignUnitModal();
     });
 
     // --- Funções Globais para Ações da Tabela ---
-    window.handleEdit = (docId) => {
-        const item = inventoryItems.find(i => i.docId === docId);
+    window.handleEdit = (id) => {
+        const item = inventoryItems.find(i => i.id === id);
         if (item) openItemModal(item);
     };
 
-    window.handleDelete = async (docId) => {
+    window.handleDelete = (id) => {
         if (confirm('Tem certeza que deseja remover este item? Ele será movido para o log de excluídos.')) {
-            const item = inventoryItems.find(i => i.docId === docId);
+            const item = inventoryItems.find(i => i.id === id);
             if (item) {
+                item.isDeleted = true;
                 addHistoryRecord(item, 'Exclusão', 'Item marcado como excluído.');
-                const itemRef = doc(db, "inventory", docId);
-                await updateDoc(itemRef, {
-                    isDeleted: true,
-                    history: item.history
-                });
+                saveInventory();
+                loadInventory();
             }
         }
     };
     
-    window.handleStock = (docId, type) => {
-        const item = inventoryItems.find(i => i.docId === docId);
+    window.handleStock = (id, type) => {
+        const item = inventoryItems.find(i => i.id === id);
         if (item) openStockModal(item, type);
     };
 
-    window.handleManageUnits = (docId) => {
-        const item = inventoryItems.find(i => i.docId === docId);
+    window.handleManageUnits = (id) => {
+        const item = inventoryItems.find(i => i.id === id);
         if(item) openUnitManagementModal(item);
     };
 
@@ -771,8 +747,8 @@ document.addEventListener('DOMContentLoaded', () => {
         openAssignUnitModal(itemId, unitId, true);
     };
 
-    window.handleReturnUnit = async (itemId, unitId) => {
-        const item = inventoryItems.find(i => i.docId === itemId);
+    window.handleReturnUnit = (itemId, unitId) => {
+        const item = inventoryItems.find(i => i.id === itemId);
         const unit = item.units.find(u => u.unitId === unitId);
         if (confirm(`Confirmar a devolução da Unidade ${unitId}?`)) {
             addHistoryRecord(item, 'Devolução', `Unidade ${unitId} devolvida por ${unit.lentTo}.`);
@@ -780,12 +756,8 @@ document.addEventListener('DOMContentLoaded', () => {
             delete unit.lentTo;
             delete unit.loanDate;
             delete unit.dueDate;
-            
-            const itemRef = doc(db, "inventory", itemId);
-            await updateDoc(itemRef, {
-                units: item.units,
-                history: item.history
-            });
+            saveInventory();
+            loadInventory();
             openUnitManagementModal(item);
         }
     };
@@ -794,49 +766,42 @@ document.addEventListener('DOMContentLoaded', () => {
         openAssignUnitModal(itemId, unitId, false);
     };
 
-    window.handleUnassignUnit = async (itemId, unitId) => {
-        const item = inventoryItems.find(i => i.docId === itemId);
+    window.handleUnassignUnit = (itemId, unitId) => {
+        const item = inventoryItems.find(i => i.id === itemId);
         const unit = item.units.find(u => u.unitId === unitId);
         if (confirm(`Remover atribuição da Unidade ${unitId} de ${unit.assignedTo}?`)) {
             addHistoryRecord(item, 'Remoção de Atribuição', `Atribuição da Unidade ${unitId} (ID: ${unit.identifier}) removida de ${unit.assignedTo}.`);
             unit.status = 'disponivel';
             delete unit.assignedTo;
             delete unit.identifier;
-            
-            const itemRef = doc(db, "inventory", itemId);
-            await updateDoc(itemRef, {
-                units: item.units,
-                history: item.history
-            });
+            saveInventory();
+            loadInventory();
             openUnitManagementModal(item);
         }
     };
 
-    window.handleHistory = (docId) => {
-        const item = inventoryItems.find(i => i.docId === docId);
+    window.handleHistory = (id) => {
+        const item = inventoryItems.find(i => i.id === id);
         if (item) openHistoryModal(item);
     };
 
     // --- Lógica de Gerenciamento de Usuários ---
-    const renderUserList = async () => {
+    const renderUserList = () => {
         userListDiv.innerHTML = '';
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        users = [];
-        usersSnapshot.forEach(doc => users.push({ id: doc.id, ...doc.data()}));
-
+        const users = getUsers();
         users.forEach(user => {
             const userDiv = document.createElement('div');
             userDiv.className = 'flex justify-between items-center p-2 border rounded-md';
             
             let buttons = '';
-            const canBeManaged = user.email !== SUPER_ADMIN_EMAIL && (currentUserData.role === 'admin' || (currentUserData.role === 'editor' && user.role !== 'admin'));
+            const canBeManaged = user.username !== SUPER_ADMIN_USERNAME && (currentUser.role === 'admin' || (currentUser.role === 'editor' && user.role !== 'admin'));
 
             if (canBeManaged) {
                 buttons = `
-                    <button onclick="handleChangeRole('${user.id}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Mudar Papel"><i class="fas fa-user-shield"></i></button>
-                    <button onclick="handleDeleteUser('${user.id}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Usuário"><i class="fas fa-user-times"></i></button>
+                    <button onclick="handleChangeRole('${user.username}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Mudar Papel"><i class="fas fa-user-shield"></i></button>
+                    <button onclick="handleDeleteUser('${user.username}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Usuário"><i class="fas fa-user-times"></i></button>
                 `;
-            } else if (user.uid === currentUser.uid) {
+            } else if (user.username === currentUser.username) {
                 buttons = '<span class="text-xs text-gray-400">Atual</span>';
             }
 
@@ -853,17 +818,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    window.handleChangeRole = async (userId) => {
-        const user = users.find(u => u.id === userId);
+    window.handleChangeRole = (username) => {
+        let users = getUsers();
+        const user = users.find(u => u.username === username);
         if (user) {
-            const newRole = prompt(`Digite o novo papel para '${user.username}' (admin, editor, user):`, user.role);
+            const newRole = prompt(`Digite o novo papel para '${username}' (admin, editor, user):`, user.role);
             if (newRole && ['admin', 'editor', 'user'].includes(newRole)) {
-                if (newRole === 'admin' && currentUserData.email !== SUPER_ADMIN_EMAIL) {
+                if (newRole === 'admin' && currentUser.username !== SUPER_ADMIN_USERNAME) {
                     alert('Apenas o admin principal pode designar outros admins.');
                     return;
                 }
-                const userRef = doc(db, "users", userId);
-                await updateDoc(userRef, { role: newRole });
+                user.role = newRole;
+                saveUsers(users);
                 renderUserList();
             } else if (newRole !== null) {
                 alert('Papel inválido.');
@@ -871,25 +837,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.handleDeleteUser = async (userId) => {
-        const user = users.find(u => u.id === userId);
-        if (confirm(`Tem certeza que deseja excluir o usuário '${user.username}'? Esta ação não pode ser desfeita.`)) {
-            // ATENÇÃO: A exclusão de usuários no Firebase Auth não é feita por aqui por segurança.
-            // Isso deve ser feito no console do Firebase ou usando o Admin SDK em um backend.
-            // Aqui, apenas removeremos o registro do Firestore.
-            await deleteDoc(doc(db, "users", userId));
+    window.handleDeleteUser = (username) => {
+        if (confirm(`Tem certeza que deseja excluir o usuário '${username}'? Esta ação não pode ser desfeita.`)) {
+            let users = getUsers().filter(u => u.username !== username);
+            saveUsers(users);
             renderUserList();
         }
     };
 
     // --- Lógica de Ações de Admin ---
-    clearLogBtn.addEventListener('click', async () => {
+    clearLogBtn.addEventListener('click', () => {
         const password = prompt('Para confirmar a limpeza de TODO o histórico, digite sua senha de admin:');
         if (password === null) return;
-        
-        // Reautenticação não é simples no cliente, esta é uma verificação básica.
-        // Em um app de produção, seria necessário um backend ou reautenticação.
-        alert("Funcionalidade de limpeza de log em desenvolvimento.");
+
+        const users = getUsers();
+        const adminUser = users.find(u => u.username === currentUser.username);
+
+        if (password === adminUser.password) {
+            if (confirm('ATENÇÃO: Esta ação é irreversível e apagará o histórico de TODOS os itens. Deseja continuar?')) {
+                inventoryItems.forEach(item => {
+                    item.history = []; // Limpa o histórico
+                    addHistoryRecord(item, 'Limpeza de Log', 'O histórico de todos os itens foi apagado.');
+                });
+                saveInventory();
+                loadInventory();
+                alert('Histórico de todos os itens foi limpo com sucesso.');
+            }
+        } else {
+            alert('Senha incorreta.');
+        }
     });
 
     // --- Lógica de Exportação ---
@@ -1031,21 +1007,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeNotificationsBtn.addEventListener('click', closeNotificationsModal);
 
-    window.handleExtendLoan = async (itemId, unitId) => {
+    window.handleExtendLoan = (itemId, unitId) => {
         const newDate = prompt("Digite a nova data de devolução (AAAA-MM-DD):");
         if (newDate) {
-            const item = inventoryItems.find(i => i.docId === itemId);
+            const item = inventoryItems.find(i => i.id === itemId);
             const unit = item.units.find(u => u.unitId === unitId);
             
             unit.dueDate = newDate;
             
             addHistoryRecord(item, 'Prorrogação', `Empréstimo da Unidade ${unitId} prorrogado para ${new Date(newDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}.`);
-            
-            const itemRef = doc(db, "inventory", itemId);
-            await updateDoc(itemRef, {
-                units: item.units,
-                history: item.history
-            });
+            saveInventory();
+            loadInventory();
             openUnitManagementModal(item);
         }
     };
@@ -1057,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     closeFleetManagementBtn.addEventListener('click', () => fleetManagementModal.classList.add('hidden'));
 
-    fleetForm.addEventListener('submit', async (e) => {
+    fleetForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const originalChassi = document.getElementById('originalChassi').value;
         const fleetData = {
@@ -1067,27 +1039,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (originalChassi) { // Editando
-            const fleetRef = doc(db, "fleets", originalChassi);
-            await setDoc(fleetRef, fleetData);
+            const index = fleets.findIndex(f => f.chassi === originalChassi);
+            fleets[index] = fleetData;
         } else { // Adicionando
-            const fleetRef = doc(db, "fleets", fleetData.chassi);
-            const docSnap = await getDoc(fleetRef);
-            if (docSnap.exists()) {
+            if (fleets.some(f => f.chassi === fleetData.chassi)) {
                 alert("Erro: Já existe uma frota com este Chassi.");
                 return;
             }
-            await setDoc(fleetRef, fleetData);
+            fleets.push(fleetData);
         }
+        saveFleets();
         fleetForm.reset();
         document.getElementById('originalChassi').value = '';
+        renderFleetList();
     });
 
-    const renderFleetList = async () => {
+    const renderFleetList = () => {
         fleetList.innerHTML = '';
-        const fleetsSnapshot = await getDocs(collection(db, "fleets"));
-        fleets = [];
-        fleetsSnapshot.forEach(doc => fleets.push({ id: doc.id, ...doc.data()}));
-
         fleets.forEach(fleet => {
             const fleetDiv = document.createElement('div');
             fleetDiv.className = 'flex justify-between items-center p-2 border rounded-md';
@@ -1097,9 +1065,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="text-sm text-gray-500">Chassi: ${fleet.chassi}</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="handleViewFleetItems('${fleet.id}')" class="text-green-500 hover:text-green-700 text-sm" title="Ver Itens Atribuídos"><i class="fas fa-eye"></i></button>
-                    <button onclick="handleEditFleet('${fleet.id}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Editar Frota"><i class="fas fa-edit"></i></button>
-                    <button onclick="handleDeleteFleet('${fleet.id}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Frota"><i class="fas fa-trash"></i></button>
+                    <button onclick="handleViewFleetItems('${fleet.chassi}')" class="text-green-500 hover:text-green-700 text-sm" title="Ver Itens Atribuídos"><i class="fas fa-eye"></i></button>
+                    <button onclick="handleEditFleet('${fleet.chassi}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Editar Frota"><i class="fas fa-edit"></i></button>
+                    <button onclick="handleDeleteFleet('${fleet.chassi}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Frota"><i class="fas fa-trash"></i></button>
                 </div>
             `;
             fleetList.appendChild(fleetDiv);
@@ -1107,23 +1075,25 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.handleEditFleet = (chassi) => {
-        const fleet = fleets.find(f => f.id === chassi);
+        const fleet = fleets.find(f => f.chassi === chassi);
         if (fleet) {
-            document.getElementById('originalChassi').value = fleet.id;
+            document.getElementById('originalChassi').value = fleet.chassi;
             document.getElementById('fleetName').value = fleet.name;
             document.getElementById('fleetModel').value = fleet.model;
             document.getElementById('fleetChassi').value = fleet.chassi;
         }
     };
     
-    window.handleDeleteFleet = async (chassi) => {
+    window.handleDeleteFleet = (chassi) => {
         if (confirm(`Tem certeza que deseja excluir a frota com chassi ${chassi}?`)) {
-            await deleteDoc(doc(db, "fleets", chassi));
+            fleets = fleets.filter(f => f.chassi !== chassi);
+            saveFleets();
+            renderFleetList();
         }
     };
 
     window.handleViewFleetItems = (chassi) => {
-        const fleet = fleets.find(f => f.id === chassi);
+        const fleet = fleets.find(f => f.chassi === chassi);
         fleetItemsName.textContent = `${fleet.name} (${fleet.model})`;
         fleetItemsList.innerHTML = '';
         
@@ -1154,9 +1124,6 @@ document.addEventListener('DOMContentLoaded', () => {
     closeFleetItemsBtn.addEventListener('click', () => fleetItemsModal.classList.add('hidden'));
 
     // --- Inicialização ---
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            showLogin();
-        }
-    });
+    initializeAdmin();
+    checkAuth();
 });
