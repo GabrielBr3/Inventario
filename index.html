@@ -11,18 +11,61 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Estilos customizados para a aparência */
+        /* Estilos customizados e variáveis de tema */
+        :root {
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --header-bg: #f9fafb;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --modal-bg: #ffffff;
+            --table-header-bg: #f9fafb;
+            --table-row-hover: #f3f4f6;
+        }
+
+        html.dark {
+            --bg-color: #111827;
+            --text-color: #d1d5db;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+            --header-bg: #1f2937;
+            --input-bg: #374151;
+            --input-border: #4b5563;
+            --modal-bg: #1f2937;
+            --table-header-bg: #374151;
+            --table-row-hover: #374151;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
+        
+        #appContainer, .modal-content, .login-content, .table, input, select {
+             background-color: var(--card-bg);
+             color: var(--text-color);
+             border-color: var(--border-color);
+        }
+        
+        thead {
+            background-color: var(--table-header-bg);
+        }
+
+        tr:hover {
+            background-color: var(--table-row-hover);
+        }
+
         .modal-backdrop, .login-backdrop {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -31,7 +74,6 @@
             padding: 1rem;
         }
         .modal-content, .login-content {
-            background-color: white;
             padding: 2rem;
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -41,6 +83,9 @@
         }
         .large-modal-content {
             max-width: 800px;
+        }
+        .xl-modal-content {
+            max-width: 1000px;
         }
         .btn {
             @apply text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-50;
@@ -52,7 +97,6 @@
         .btn-gray { @apply bg-gray-500 hover:bg-gray-600 focus:ring-gray-400; }
         .btn-purple { @apply bg-purple-500 hover:bg-purple-600 focus:ring-purple-400; }
         
-        /* Ocultar elementos por padrão */
         .hidden { display: none; }
     </style>
 </head>
@@ -61,15 +105,15 @@
     <!-- Tela de Login -->
     <div id="loginBackdrop" class="login-backdrop">
         <div class="login-content text-center">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">Acessar Inventário</h2>
+            <h2 class="text-2xl font-bold mb-6">Acessar Inventário</h2>
             <form id="loginForm">
                 <div class="mb-4 text-left">
-                    <label for="loginUsername" class="block text-sm font-medium text-gray-700">Usuário</label>
-                    <input type="text" id="loginUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    <label for="loginUsername" class="block text-sm font-medium">Usuário</label>
+                    <input type="text" id="loginUsername" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
                 <div class="mb-6 text-left">
-                    <label for="loginPassword" class="block text-sm font-medium text-gray-700">Senha</label>
-                    <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                    <label for="loginPassword" class="block text-sm font-medium">Senha</label>
+                    <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
                 <button type="submit" class="w-full btn btn-primary">Entrar</button>
             </form>
@@ -77,40 +121,42 @@
     </div>
 
     <!-- Conteúdo Principal da Aplicação (inicialmente oculto) -->
-    <div id="appContainer" class="hidden max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
+    <div id="appContainer" class="hidden max-w-7xl mx-auto rounded-xl shadow-lg p-4 sm:p-6">
         <header class="mb-6 border-b pb-4 flex flex-wrap justify-between items-center gap-4">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Sistema de Controle de Inventário</h1>
-                <p class="text-sm text-gray-500">Logado como: <span id="loggedInUser" class="font-semibold"></span> (<span id="userRole" class="font-semibold"></span>)</p>
+                <h1 class="text-2xl sm:text-3xl font-bold">Sistema de Controle de Inventário</h1>
+                <p class="text-sm text-gray-400">Logado como: <span id="loggedInUser" class="font-semibold"></span> (<span id="userRole" class="font-semibold"></span>)</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <button id="notificationsBtn" class="relative text-gray-600 hover:text-blue-500 focus:outline-none">
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                </button>
+                <button id="notificationsBtn" class="relative text-gray-500 dark:text-gray-400 hover:text-blue-500 focus:outline-none">
                     <i class="fas fa-bell fa-lg"></i>
                     <span id="notificationBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                 </button>
-                <button id="clearLogBtn" class="btn btn-red admin-only"><i class="fas fa-eraser mr-2"></i>Limpar Log</button>
-                <button id="exportLogBtn" class="btn btn-purple admin-only"><i class="fas fa-file-medical-alt mr-2"></i>Exportar Log</button>
-                <button id="viewDeletedBtn" class="btn btn-gray admin-editor-only"><i class="fas fa-trash-restore mr-2"></i>Ver Excluídos</button>
-                <button id="manageFleetsBtn" class="btn btn-primary admin-editor-only"><i class="fas fa-truck mr-2"></i>Frotas</button>
+                <button id="viewFleetsBtn" class="btn btn-green"><i class="fas fa-eye mr-2"></i>Visualizar Frotas</button>
+                <button id="manageFleetsBtn" class="btn btn-primary admin-editor-only"><i class="fas fa-truck mr-2"></i>Gerenciar Frotas</button>
                 <button id="manageUsersBtn" class="btn btn-yellow admin-editor-only"><i class="fas fa-users-cog mr-2"></i>Usuários</button>
                 <button id="logoutBtn" class="btn btn-red"><i class="fas fa-sign-out-alt mr-2"></i>Sair</button>
             </div>
         </header>
 
         <!-- Barra de Pesquisa e Filtros -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 rounded-lg border">
             <!-- Campo de Pesquisa Geral -->
             <div class="lg:col-span-2">
-                <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Pesquisar por ID, Nome ou Classe</label>
+                <label for="searchInput" class="block text-sm font-medium mb-1">Pesquisar por ID, Nome ou Classe</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-search text-gray-400"></i></span>
-                    <input type="text" id="searchInput" placeholder="Digite para pesquisar..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="searchInput" placeholder="Digite para pesquisar..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
             <!-- Filtro por Tipo -->
             <div>
-                <label for="filterType" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Tipo</label>
-                <select id="filterType" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label for="filterType" class="block text-sm font-medium mb-1">Filtrar por Tipo</label>
+                <select id="filterType" class="w-full py-2 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="all">Todos os Tipos</option>
                     <option value="consumivel">Consumível</option>
                     <option value="ferramenta">Ferramenta</option>
@@ -119,39 +165,44 @@
             </div>
             <!-- Controles de Ordenação -->
             <div>
-                <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                <label for="sortBy" class="block text-sm font-medium mb-1">Ordenar por</label>
                 <div class="flex gap-2">
-                    <select id="sortBy" class="flex-grow py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="sortBy" class="flex-grow py-2 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="id">ID</option>
                         <option value="name">Nome</option>
                     </select>
-                    <button id="sortOrderBtn" class="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-100" title="Mudar Ordem">
+                    <button id="sortOrderBtn" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Mudar Ordem">
                         <i id="sortOrderIcon" class="fas fa-arrow-down-1-9"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 mb-4">
-             <button id="addItemBtn" class="btn btn-primary"><i class="fas fa-plus mr-2"></i>Adicionar Item</button>
-             <button id="exportBtn" class="btn btn-green admin-editor-only"><i class="fas fa-file-export mr-2"></i>Exportar</button>
+        <div class="flex justify-between items-center gap-3 mb-4">
+             <div>
+                <button id="viewDeletedBtn" class="btn btn-gray admin-editor-only"><i class="fas fa-trash-restore mr-2"></i>Ver Excluídos</button>
+             </div>
+             <div class="flex gap-3">
+                <button id="exportBtn" class="btn btn-purple admin-editor-only"><i class="fas fa-file-export mr-2"></i>Exportar Inventário</button>
+                <button id="addItemBtn" class="btn btn-primary"><i class="fas fa-plus mr-2"></i>Adicionar Item</button>
+             </div>
         </div>
 
         <!-- Tabela de Inventário -->
         <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border border-gray-200">
-                <thead class="bg-gray-100">
+            <table class="min-w-full border">
+                <thead>
                     <tr>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Imagem</th>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome do Item</th>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status / Qtd.</th>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Última Alteração</th>
-                        <th class="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data/Hora</th>
-                        <th class="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider">ID</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider">Imagem</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider">Nome do Item</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider">Status / Qtd.</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider">Última Alteração</th>
+                        <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider">Data/Hora</th>
+                        <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider">Ações</th>
                     </tr>
                 </thead>
-                <tbody id="inventoryTableBody" class="text-gray-700">
+                <tbody id="inventoryTableBody">
                     <!-- Linhas da tabela serão inseridas aqui via JavaScript -->
                 </tbody>
             </table>
@@ -166,34 +217,34 @@
                 <input type="hidden" id="originalItemId">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="mb-4">
-                        <label for="itemType" class="block text-sm font-medium text-gray-700">Tipo de Item</label>
-                        <select id="itemType" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                        <label for="itemType" class="block text-sm font-medium">Tipo de Item</label>
+                        <select id="itemType" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
                             <option value="consumivel">Consumível</option>
                             <option value="ferramenta">Ferramenta</option>
                             <option value="atribuido">Atribuído</option>
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label for="itemId" class="block text-sm font-medium text-gray-700">ID do Item</label>
-                        <input type="text" id="itemId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                        <label for="itemId" class="block text-sm font-medium">ID do Item</label>
+                        <input type="text" id="itemId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label for="itemName" class="block text-sm font-medium text-gray-700">Nome do Item</label>
-                    <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                    <label for="itemName" class="block text-sm font-medium">Nome do Item</label>
+                    <input type="text" id="itemName" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                 </div>
                 <div id="itemClassContainer" class="mb-4 hidden">
-                    <label for="itemClass" class="block text-sm font-medium text-gray-700">Classe do Item</label>
-                    <input type="text" id="itemClass" placeholder="Ex: Antena GPS, Monitor" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <label for="itemClass" class="block text-sm font-medium">Classe do Item</label>
+                    <input type="text" id="itemClass" placeholder="Ex: Antena GPS, Monitor" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
                 </div>
                 <div class="mb-4">
-                    <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
-                    <input type="number" id="itemQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="0">
+                    <label for="itemQuantity" class="block text-sm font-medium">Quantidade</label>
+                    <input type="number" id="itemQuantity" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required min="0">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Imagem do Item</label>
+                    <label class="block text-sm font-medium">Imagem do Item</label>
                     <div class="mt-1">
-                        <input type="file" id="itemImage" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*">
+                        <input type="file" id="itemImage" class="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*">
                     </div>
                     <img id="imagePreview" src="" alt="Prévia da imagem" class="mt-2 rounded-md max-h-32 hidden"/>
                 </div>
@@ -204,9 +255,21 @@
             </form>
         </div>
     </div>
+    
+    <!-- Modal de Visualização de Frotas -->
+    <div id="fleetsViewModal" class="modal-backdrop hidden">
+        <div class="modal-content xl-modal-content">
+            <h2 class="text-2xl font-bold mb-4">Visualização de Frotas e Itens Atribuídos</h2>
+            <div id="fleetsViewList" class="max-h-[70vh] overflow-y-auto space-y-4">
+                <!-- Conteúdo gerado dinamicamente -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="closeFleetsViewBtn" class="btn btn-gray">Fechar</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Outros Modais (sem alterações) -->
-    <!-- Modal para Entrada/Saída de Estoque (Consumíveis) -->
+    <!-- Outros Modais (sem alterações estruturais) -->
     <div id="stockModal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h2 id="stockModalTitle" class="text-2xl font-bold mb-4">Registrar Movimentação</h2>
@@ -214,8 +277,8 @@
                 <input type="hidden" id="stockItemId">
                 <input type="hidden" id="stockType">
                 <div class="mb-4">
-                    <label for="stockQuantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
-                    <input type="number" id="stockQuantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="1">
+                    <label for="stockQuantity" class="block text-sm font-medium">Quantidade</label>
+                    <input type="number" id="stockQuantity" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required min="1">
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" id="cancelStockBtn" class="btn btn-gray">Cancelar</button>
@@ -225,11 +288,10 @@
         </div>
     </div>
 
-    <!-- Modal de Gerenciamento de Unidades (Ferramentas e Atribuídos) -->
     <div id="unitManagementModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 id="unitManagementTitle" class="text-2xl font-bold mb-2">Gerenciar Unidades</h2>
-            <p class="mb-4 text-gray-600"><strong>Item:</strong> <span id="unitManagementItemName"></span></p>
+            <p class="mb-4"><strong>Item:</strong> <span id="unitManagementItemName"></span></p>
             <div id="unitList" class="max-h-96 overflow-y-auto space-y-2"></div>
             <div class="flex justify-end mt-6">
                 <button type="button" id="closeUnitManagementBtn" class="btn btn-gray">Fechar</button>
@@ -237,7 +299,6 @@
         </div>
     </div>
 
-    <!-- Modal para Emprestar/Atribuir Unidade -->
     <div id="assignUnitModal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h2 id="assignUnitModalTitle" class="text-2xl font-bold mb-4"></h2>
@@ -245,24 +306,24 @@
                 <input type="hidden" id="assignUnitItemId">
                 <input type="hidden" id="assignUnitUnitId">
                 <div class="mb-4">
-                    <label for="assignUnitTo" id="assignUnitToLabel" class="block text-sm font-medium text-gray-700"></label>
+                    <label for="assignUnitTo" id="assignUnitToLabel" class="block text-sm font-medium"></label>
                     <div id="assignUnitToContainer"></div>
                 </div>
                 <div class="mb-4" id="assignUnitPeriodContainer">
                     <div class="flex items-center gap-4">
                         <div class="flex-grow">
-                            <label for="assignUnitPeriod" class="block text-sm font-medium text-gray-700">Data de Devolução</label>
-                            <input type="date" id="assignUnitPeriod" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            <label for="assignUnitPeriod" class="block text-sm font-medium">Data de Devolução</label>
+                            <input type="date" id="assignUnitPeriod" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
                         </div>
                         <div class="mt-6">
                             <input type="checkbox" id="assignUnitIndefinite" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <label for="assignUnitIndefinite" class="ml-2 text-sm text-gray-900">Indefinido</label>
+                            <label for="assignUnitIndefinite" class="ml-2 text-sm">Indefinido</label>
                         </div>
                     </div>
                 </div>
                 <div class="mb-4" id="assignUnitIdentifierContainer">
-                    <label for="assignUnitIdentifier" class="block text-sm font-medium text-gray-700">Nº de Série / Cód. da Unidade</label>
-                    <input type="text" id="assignUnitIdentifier" placeholder="Ex: SN-12345" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <label for="assignUnitIdentifier" class="block text-sm font-medium">Nº de Série / Cód. da Unidade</label>
+                    <input type="text" id="assignUnitIdentifier" placeholder="Ex: SN-12345" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" id="cancelAssignUnitBtn" class="btn btn-gray">Cancelar</button>
@@ -272,7 +333,6 @@
         </div>
     </div>
 
-    <!-- Modal de Gerenciamento de Frotas -->
     <div id="fleetManagementModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Gerenciar Frotas</h2>
@@ -282,16 +342,16 @@
                         <input type="hidden" id="originalChassi">
                         <h3 class="text-lg font-semibold mb-2 border-b pb-2">Cadastrar/Editar Frota</h3>
                         <div class="mb-4 mt-4">
-                            <label for="fleetName" class="block text-sm font-medium text-gray-700">Nome da Frota</label>
-                            <input type="text" id="fleetName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                            <label for="fleetName" class="block text-sm font-medium">Nome da Frota</label>
+                            <input type="text" id="fleetName" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
-                            <label for="fleetModel" class="block text-sm font-medium text-gray-700">Modelo</label>
-                            <input type="text" id="fleetModel" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                            <label for="fleetModel" class="block text-sm font-medium">Modelo</label>
+                            <input type="text" id="fleetModel" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
-                            <label for="fleetChassi" class="block text-sm font-medium text-gray-700">Chassi (ID Único)</label>
-                            <input type="text" id="fleetChassi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                            <label for="fleetChassi" class="block text-sm font-medium">Chassi (ID Único)</label>
+                            <input type="text" id="fleetChassi" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-full">Salvar Frota</button>
                     </form>
@@ -307,19 +367,6 @@
         </div>
     </div>
     
-    <!-- Modal de Itens Atribuídos à Frota -->
-    <div id="fleetItemsModal" class="modal-backdrop hidden">
-        <div class="modal-content large-modal-content">
-            <h2 class="text-2xl font-bold mb-2">Itens Atribuídos</h2>
-            <p class="mb-4 text-gray-600"><strong>Frota:</strong> <span id="fleetItemsName"></span></p>
-            <div id="fleetItemsList" class="max-h-96 overflow-y-auto space-y-2"></div>
-            <div class="flex justify-end mt-6">
-                <button type="button" id="closeFleetItemsBtn" class="btn btn-gray">Fechar</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal de Gerenciamento de Usuários -->
     <div id="userManagementModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Gerenciar Usuários</h2>
@@ -328,16 +375,16 @@
                     <form id="registerUserForm">
                         <h3 class="text-lg font-semibold mb-2 border-b pb-2">Cadastrar Novo Usuário</h3>
                         <div class="mb-4 mt-4">
-                            <label for="newUsername" class="block text-sm font-medium text-gray-700">Novo Usuário</label>
-                            <input type="text" id="newUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                            <label for="newUsername" class="block text-sm font-medium">Novo Usuário</label>
+                            <input type="text" id="newUsername" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
-                            <label for="newPassword" class="block text-sm font-medium text-gray-700">Nova Senha</label>
-                            <input type="password" id="newPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                            <label for="newPassword" class="block text-sm font-medium">Nova Senha</label>
+                            <input type="password" id="newPassword" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
-                            <label for="newUserRole" class="block text-sm font-medium text-gray-700">Papel</label>
-                            <select id="newUserRole" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            <label for="newUserRole" class="block text-sm font-medium">Papel</label>
+                            <select id="newUserRole" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
                                 <option value="user">Usuário</option>
                                 <option value="editor">Editor</option>
                                 <option value="admin" id="adminRoleOption">Admin</option>
@@ -357,22 +404,21 @@
         </div>
     </div>
 
-    <!-- Modal de Histórico do Item -->
     <div id="historyModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-2">Histórico do Item</h2>
-            <p class="mb-4 text-gray-600"><strong>Item:</strong> <span id="historyItemName"></span></p>
+            <p class="mb-4"><strong>Item:</strong> <span id="historyItemName"></span></p>
             <div class="max-h-96 overflow-y-auto border rounded-lg">
                 <table class="min-w-full">
-                    <thead class="bg-gray-100 sticky top-0">
+                    <thead class="sticky top-0">
                         <tr>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Data/Hora</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Usuário</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Ação</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Detalhes</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Data/Hora</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Usuário</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Ação</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Detalhes</th>
                         </tr>
                     </thead>
-                    <tbody id="historyLogBody" class="text-gray-700 text-sm"></tbody>
+                    <tbody id="historyLogBody" class="text-sm"></tbody>
                 </table>
             </div>
             <div class="flex justify-end mt-6">
@@ -381,21 +427,20 @@
         </div>
     </div>
     
-    <!-- Modal de Itens Excluídos -->
     <div id="deletedItemsModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Itens Excluídos</h2>
             <div class="max-h-96 overflow-y-auto border rounded-lg">
                 <table class="min-w-full">
-                     <thead class="bg-gray-100 sticky top-0">
+                     <thead class="sticky top-0">
                         <tr>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Nome</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Excluído Por</th>
-                            <th class="py-2 px-3 text-left text-xs font-semibold text-gray-600 uppercase">Data da Exclusão</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">ID</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Nome</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Excluído Por</th>
+                            <th class="py-2 px-3 text-left text-xs font-semibold uppercase">Data da Exclusão</th>
                         </tr>
                     </thead>
-                    <tbody id="deletedItemsBody" class="text-gray-700 text-sm"></tbody>
+                    <tbody id="deletedItemsBody" class="text-sm"></tbody>
                 </table>
             </div>
             <div class="flex justify-end mt-6">
@@ -404,7 +449,6 @@
         </div>
     </div>
 
-    <!-- Modal de Notificações -->
     <div id="notificationsModal" class="modal-backdrop hidden">
         <div class="modal-content large-modal-content">
             <h2 class="text-2xl font-bold mb-4">Notificações de Empréstimos Vencidos</h2>
@@ -477,10 +521,10 @@
             const manageFleetsBtn = document.getElementById('manageFleetsBtn');
             const closeFleetManagementBtn = document.getElementById('closeFleetManagementBtn');
             
-            const fleetItemsModal = document.getElementById('fleetItemsModal');
-            const fleetItemsName = document.getElementById('fleetItemsName');
-            const fleetItemsList = document.getElementById('fleetItemsList');
-            const closeFleetItemsBtn = document.getElementById('closeFleetItemsBtn');
+            const viewFleetsBtn = document.getElementById('viewFleetsBtn');
+            const fleetsViewModal = document.getElementById('fleetsViewModal');
+            const fleetsViewList = document.getElementById('fleetsViewList');
+            const closeFleetsViewBtn = document.getElementById('closeFleetsViewBtn');
 
             const historyModal = document.getElementById('historyModal');
             const historyItemName = document.getElementById('historyItemName');
@@ -493,14 +537,16 @@
             const closeDeletedItemsBtn = document.getElementById('closeDeletedItemsBtn');
 
             const exportBtn = document.getElementById('exportBtn');
-            const exportLogBtn = document.getElementById('exportLogBtn');
-            const clearLogBtn = document.getElementById('clearLogBtn');
 
             const notificationsBtn = document.getElementById('notificationsBtn');
             const notificationBadge = document.getElementById('notificationBadge');
             const notificationsModal = document.getElementById('notificationsModal');
             const notificationsList = document.getElementById('notificationsList');
             const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+            
+            const themeToggleButton = document.getElementById('theme-toggle');
+            const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+            const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
             // --- Estado da Aplicação ---
             let inventoryItems = [];
@@ -598,12 +644,10 @@
             const renderTable = () => {
                 inventoryTableBody.innerHTML = '';
                 
-                // 1. Obter valores dos filtros e da ordenação
                 const searchValue = searchInput.value.toLowerCase();
                 const typeValue = filterType.value;
                 const sortByValue = sortBy.value;
 
-                // 2. Filtrar itens
                 let filteredItems = inventoryItems.filter(item => !item.isDeleted);
 
                 if (searchValue) {
@@ -618,16 +662,15 @@
                     filteredItems = filteredItems.filter(item => item.type === typeValue);
                 }
 
-                // 3. Ordenar itens
                 filteredItems.sort((a, b) => {
                     let valA, valB;
                     if (sortByValue === 'id') {
                         valA = parseInt(a.id, 10) || 0;
                         valB = parseInt(b.id, 10) || 0;
                         return valA - valB;
-                    } else { // 'name'
-                        valA = a.name.toLowerCase();
-                        valB = b.name.toLowerCase();
+                    } else { 
+                        valA = (a.name || '').toLowerCase();
+                        valB = (b.name || '').toLowerCase();
                         return valA.localeCompare(valB);
                     }
                 });
@@ -636,15 +679,14 @@
                     filteredItems.reverse();
                 }
 
-                // 4. Renderizar a tabela
                 if (filteredItems.length === 0) {
-                    inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">Nenhum item encontrado com os filtros atuais.</td></tr>`;
+                    inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10">Nenhum item encontrado.</td></tr>`;
                     return;
                 }
 
                 filteredItems.forEach(item => {
                     const row = document.createElement('tr');
-                    row.className = `border-b hover:bg-gray-100 ${item.quantity === 0 && item.type === 'consumivel' ? 'bg-gray-50 text-gray-400' : ''}`;
+                    row.className = `border-b ${item.quantity === 0 && item.type === 'consumivel' ? 'opacity-50' : ''}`;
                     const lastChange = item.history ? item.history[0] : null;
                     
                     const isAdminOrEditor = currentUser.role === 'admin' || currentUser.role === 'editor';
@@ -659,10 +701,12 @@
                         actionButtons += `<button onclick="handleManageUnits('${item.id}')" class="text-indigo-500 hover:text-indigo-700" title="Gerenciar Unidades"><i class="fas fa-tasks"></i></button>`;
                     } else { // Consumível
                         statusOrQtyCell = `<div class="font-bold">${item.quantity}</div>`;
-                        actionButtons += `
-                            <button onclick="handleStock('${item.id}', 'Entrada')" class="text-green-500 hover:text-green-700" title="Registrar Entrada"><i class="fas fa-arrow-up"></i></button>
-                            <button onclick="handleStock('${item.id}', 'Saída')" class="text-yellow-500 hover:text-yellow-700" title="Registrar Saída"><i class="fas fa-arrow-down"></i></button>
-                        `;
+                        if (isAdminOrEditor) {
+                            actionButtons += `
+                                <button onclick="handleStock('${item.id}', 'Entrada')" class="text-green-500 hover:text-green-700" title="Registrar Entrada"><i class="fas fa-arrow-up"></i></button>
+                                <button onclick="handleStock('${item.id}', 'Saída')" class="text-yellow-500 hover:text-yellow-700" title="Registrar Saída"><i class="fas fa-arrow-down"></i></button>
+                            `;
+                        }
                     }
                     
                     if (isAdminOrEditor) {
@@ -725,17 +769,11 @@
                     document.getElementById('itemId').value = nextId;
                 }
                 
-                const isUserRole = currentUser.role === 'user';
-                document.getElementById('itemId').disabled = isUserRole && !!item;
-                document.getElementById('itemName').disabled = isUserRole && !!item;
-                document.getElementById('itemType').disabled = isUserRole && !!item;
-                
                 itemModal.classList.remove('hidden');
             };
 
             const closeItemModal = () => itemModal.classList.add('hidden');
             
-            // ... (O restante dos modais e suas funções permanecem os mesmos) ...
              const openStockModal = (item, type) => {
                 stockForm.reset();
                 stockModalTitle.textContent = `Registrar ${type} de ${item.name}`;
@@ -757,7 +795,7 @@
                     if (unit.status !== 'disponivel') {
                         const target = isTool ? unit.lentTo : fleets.find(f => f.chassi === unit.assignedTo)?.name || unit.assignedTo;
                         const period = isTool && unit.dueDate ? (unit.dueDate === 'Indefinido' ? '(Indefinido)' : `(Devolver até: ${new Date(unit.dueDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})})`) : '';
-                        const identifier = unit.identifier ? `<span class="text-xs text-gray-500 block">Nº Série: ${unit.identifier}</span>` : '';
+                        const identifier = unit.identifier ? `<span class="text-xs block">Nº Série: ${unit.identifier}</span>` : '';
                         const actionText = isTool ? 'Devolver' : 'Remover';
                         const actionFunc = isTool ? 'handleReturnUnit' : 'handleUnassignUnit';
                         let extendButton = '';
@@ -767,7 +805,7 @@
                         statusHTML = `
                             <div class="flex-grow">
                                 <p class="font-semibold">Unidade ${unit.unitId}</p>
-                                <p class="text-sm text-yellow-600">${isTool ? 'Emprestado para' : 'Atribuído a'}: ${target} ${period}</p>
+                                <p class="text-sm text-yellow-500">${isTool ? 'Emprestado para' : 'Atribuído a'}: ${target} ${period}</p>
                                 ${identifier}
                             </div>
                             <div class="flex gap-2">
@@ -781,7 +819,7 @@
                         statusHTML = `
                             <div>
                                 <p class="font-semibold">Unidade ${unit.unitId}</p>
-                                <p class="text-sm text-green-600">Disponível</p>
+                                <p class="text-sm text-green-500">Disponível</p>
                             </div>
                             <button onclick="${actionFunc}('${item.id}', ${unit.unitId})" class="btn btn-primary text-xs">${actionText}</button>
                         `;
@@ -803,7 +841,7 @@
                     const toInput = document.createElement('input');
                     toInput.type = 'text';
                     toInput.id = 'assignUnitTo';
-                    toInput.className = 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm';
+                    toInput.className = 'mt-1 block w-full px-3 py-2 border rounded-md shadow-sm';
                     toInput.required = true;
                     assignUnitToLabel.textContent = 'Emprestar para:';
                     assignUnitToContainer.innerHTML = '';
@@ -817,7 +855,7 @@
                     
                     const fleetSelect = document.createElement('select');
                     fleetSelect.id = 'assignUnitTo';
-                    fleetSelect.className = 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm';
+                    fleetSelect.className = 'mt-1 block w-full px-3 py-2 border rounded-md shadow-sm';
                     fleets.forEach(fleet => {
                         const option = document.createElement('option');
                         option.value = fleet.chassi;
@@ -891,15 +929,15 @@
             const openNotificationsModal = (overdueLoans) => {
                 notificationsList.innerHTML = '';
                 if (overdueLoans.length === 0) {
-                    notificationsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum empréstimo vencido.</p>';
+                    notificationsList.innerHTML = '<p class="text-center">Nenhum empréstimo vencido.</p>';
                 } else {
                     overdueLoans.forEach(loan => {
                         const notificationDiv = document.createElement('div');
-                        notificationDiv.className = 'p-3 border rounded-md mb-2 bg-red-50 border-red-200';
+                        notificationDiv.className = 'p-3 border rounded-md mb-2 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-500/30';
                         notificationDiv.innerHTML = `
-                            <p class="font-semibold text-red-800">${loan.itemName} (Unidade ${loan.unitId})</p>
-                            <p class="text-sm text-red-700">Emprestado para: <strong>${loan.lentTo}</strong></p>
-                            <p class="text-sm text-red-700">Venceu há: <strong>${loan.daysOverdue} dia(s)</strong></p>
+                            <p class="font-semibold text-red-800 dark:text-red-300">${loan.itemName} (Unidade ${loan.unitId})</p>
+                            <p class="text-sm text-red-700 dark:text-red-400">Emprestado para: <strong>${loan.lentTo}</strong></p>
+                            <p class="text-sm text-red-700 dark:text-red-400">Venceu há: <strong>${loan.daysOverdue} dia(s)</strong></p>
                         `;
                         notificationsList.appendChild(notificationDiv);
                     });
@@ -1010,9 +1048,8 @@
                 const type = document.getElementById('itemType').value;
                 const itemClass = document.getElementById('itemClass').value;
 
-                // [CORREÇÃO] Verifica se o ID já existe em QUALQUER item, incluindo os excluídos.
                 if (originalId !== newId && inventoryItems.some(i => i.id === newId)) {
-                    alert('Este ID já foi utilizado. Mesmo que o item original tenha sido excluído, o ID não pode ser reutilizado para manter a integridade do histórico. Por favor, escolha outro.');
+                    alert('Este ID já foi utilizado. Por favor, escolha outro.');
                     return;
                 }
 
@@ -1133,15 +1170,18 @@
                     }
                 } else { // Atribuído
                     const fleet = fleets.find(f => f.chassi === to);
-                    const alreadyAssigned = inventoryItems.some(invItem => 
+                    
+                    // *** CORREÇÃO DA LÓGICA DE ATRIBUIÇÃO ***
+                    // Verifica se a frota de destino já possui QUALQUER item da mesma classe.
+                    const fleetHasClassAssigned = inventoryItems.some(invItem => 
                         invItem.type === 'atribuido' &&
+                        invItem.class && // Garante que a classe exista
                         invItem.class === item.class &&
-                        invItem.id !== item.id && // Exclui o próprio item da verificação
                         invItem.units.some(u => u.assignedTo === to)
                     );
 
-                    if (alreadyAssigned) {
-                        alert(`Erro: A frota '${fleet.name}' já possui um item da classe '${item.class}' atribuído.`);
+                    if (fleetHasClassAssigned) {
+                        alert(`Erro: A frota '${fleet.name}' já possui um item da classe '${item.class}' atribuído. Não é possível atribuir múltiplos itens da mesma classe à mesma frota.`);
                         return;
                     }
 
@@ -1170,7 +1210,7 @@
                         inventoryItems[itemIndex].isDeleted = true;
                         addHistoryRecord(inventoryItems[itemIndex], 'Exclusão', 'Item marcado como excluído.');
                         saveInventory();
-                        renderTable(); // Apenas renderiza novamente, sem recarregar tudo
+                        renderTable();
                     }
                 }
             };
@@ -1244,13 +1284,13 @@
                             <button onclick="handleDeleteUser('${user.username}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Usuário"><i class="fas fa-user-times"></i></button>
                         `;
                     } else if (user.username === currentUser.username) {
-                        buttons = '<span class="text-xs text-gray-400">Atual</span>';
+                        buttons = '<span class="text-xs">Atual</span>';
                     }
 
                     userDiv.innerHTML = `
                         <div>
                             <p class="font-semibold">${user.username}</p>
-                            <p class="text-sm text-gray-500">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
+                            <p class="text-sm">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
                         </div>
                         <div class="flex gap-2">
                             ${buttons}
@@ -1286,29 +1326,6 @@
                     renderUserList();
                 }
             };
-
-            // --- Lógica de Ações de Admin ---
-            clearLogBtn.addEventListener('click', () => {
-                const password = prompt('Para confirmar a limpeza de TODO o histórico, digite sua senha de admin:');
-                if (password === null) return;
-
-                const users = getUsers();
-                const adminUser = users.find(u => u.username === currentUser.username);
-
-                if (password === adminUser.password) {
-                    if (confirm('ATENÇÃO: Esta ação é irreversível e apagará o histórico de TODOS os itens. Deseja continuar?')) {
-                        inventoryItems.forEach(item => {
-                            item.history = []; // Limpa o histórico
-                            addHistoryRecord(item, 'Limpeza de Log', 'O histórico de todos os itens foi apagado.');
-                        });
-                        saveInventory();
-                        loadInventory();
-                        alert('Histórico de todos os itens foi limpo com sucesso.');
-                    }
-                } else {
-                    alert('Senha incorreta.');
-                }
-            });
 
             // --- Lógica de Exportação ---
             exportBtn.addEventListener('click', () => {
@@ -1383,39 +1400,11 @@
                 XLSX.writeFile(wb, "inventario_detalhado.xlsx");
             });
             
-            exportLogBtn.addEventListener('click', () => {
-                const allLogs = [];
-                inventoryItems.forEach(item => {
-                    if (item.history) {
-                        item.history.forEach(log => {
-                            allLogs.push({
-                                'ID do Item': item.id,
-                                'Nome do Item': item.name,
-                                'Data/Hora': new Date(log.timestamp).toLocaleString('pt-BR'),
-                                'Usuário': log.user,
-                                'Ação': log.action,
-                                'Detalhes': log.details
-                            });
-                        });
-                    }
-                });
-
-                if (allLogs.length === 0) {
-                    alert('Nenhum registro no log para exportar.');
-                    return;
-                }
-
-                const worksheet = XLSX.utils.json_to_sheet(allLogs);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Log Completo");
-                XLSX.writeFile(workbook, "log_completo_inventario.xlsx");
-            });
-
             // --- Lógica de Notificações ---
             const updateNotifications = () => {
                 const overdueLoans = [];
                 const now = new Date();
-                now.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas o dia
+                now.setHours(0, 0, 0, 0); 
 
                 inventoryItems.forEach(item => {
                     if (item.type === 'ferramenta' && item.units) {
@@ -1504,10 +1493,9 @@
                     fleetDiv.innerHTML = `
                         <div>
                             <p class="font-semibold">${fleet.name} (${fleet.model})</p>
-                            <p class="text-sm text-gray-500">Chassi: ${fleet.chassi}</p>
+                            <p class="text-sm">Chassi: ${fleet.chassi}</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="handleViewFleetItems('${fleet.chassi}')" class="text-green-500 hover:text-green-700 text-sm" title="Ver Itens Atribuídos"><i class="fas fa-eye"></i></button>
                             <button onclick="handleEditFleet('${fleet.chassi}')" class="text-blue-500 hover:text-blue-700 text-sm" title="Editar Frota"><i class="fas fa-edit"></i></button>
                             <button onclick="handleDeleteFleet('${fleet.chassi}')" class="text-red-500 hover:text-red-700 text-sm" title="Excluir Frota"><i class="fas fa-trash"></i></button>
                         </div>
@@ -1533,39 +1521,78 @@
                     renderFleetList();
                 }
             };
-
-            window.handleViewFleetItems = (chassi) => {
-                const fleet = fleets.find(f => f.chassi === chassi);
-                fleetItemsName.textContent = `${fleet.name} (${fleet.model})`;
-                fleetItemsList.innerHTML = '';
+            
+            // --- Nova Lógica para Visualização de Frotas ---
+            viewFleetsBtn.addEventListener('click', () => {
+                fleetsViewList.innerHTML = ''; // Limpa a lista
                 
-                const assignedItems = inventoryItems.filter(item => 
-                    item.type === 'atribuido' &&
-                    item.units.some(unit => unit.assignedTo === chassi)
-                );
-
-                if (assignedItems.length === 0) {
-                    fleetItemsList.innerHTML = '<p class="text-gray-500 text-center">Nenhum item atribuído a esta frota.</p>';
+                if (fleets.length === 0) {
+                    fleetsViewList.innerHTML = '<p class="text-center">Nenhuma frota cadastrada.</p>';
                 } else {
-                    assignedItems.forEach(item => {
-                        item.units.forEach(unit => {
-                            if (unit.assignedTo === chassi) {
-                                const itemDiv = document.createElement('div');
-                                itemDiv.className = 'p-2 border-b';
-                                itemDiv.innerHTML = `
-                                    <p class="font-semibold">${item.name} (Unidade ${unit.unitId})</p>
-                                    <p class="text-sm text-gray-600">Nº de Série: ${unit.identifier || 'Não informado'}</p>
-                                `;
-                                fleetItemsList.appendChild(itemDiv);
-                            }
-                        });
+                    fleets.forEach(fleet => {
+                        const assignedItems = inventoryItems.filter(item => 
+                            item.type === 'atribuido' &&
+                            item.units.some(unit => unit.assignedTo === fleet.chassi)
+                        );
+
+                        let itemsHTML = '<p class="text-sm pl-4">Nenhum item atribuído.</p>';
+                        if (assignedItems.length > 0) {
+                            itemsHTML = '<ul class="list-disc pl-8 text-sm space-y-1 mt-2">';
+                            assignedItems.forEach(item => {
+                                item.units.forEach(unit => {
+                                    if (unit.assignedTo === fleet.chassi) {
+                                        itemsHTML += `<li><strong>${item.name}</strong> (Classe: ${item.class || 'N/D'}) - Nº Série: ${unit.identifier || 'N/A'}</li>`;
+                                    }
+                                });
+                            });
+                            itemsHTML += '</ul>';
+                        }
+                        
+                        const fleetAccordion = document.createElement('div');
+                        fleetAccordion.className = 'border rounded-lg overflow-hidden';
+                        fleetAccordion.innerHTML = `
+                            <button class="w-full text-left p-4 flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                                <div>
+                                    <p class="font-bold">${fleet.name} (${fleet.model})</p>
+                                    <p class="text-xs">Chassi: ${fleet.chassi}</p>
+                                </div>
+                                <i class="fas fa-chevron-down transform transition-transform"></i>
+                            </button>
+                            <div class="p-4 border-t hidden">
+                                ${itemsHTML}
+                            </div>
+                        `;
+                        fleetsViewList.appendChild(fleetAccordion);
                     });
                 }
-                fleetItemsModal.classList.remove('hidden');
-            };
-            closeFleetItemsBtn.addEventListener('click', () => fleetItemsModal.classList.add('hidden'));
+                
+                fleetsViewModal.classList.remove('hidden');
+            });
+            closeFleetsViewBtn.addEventListener('click', () => fleetsViewModal.classList.add('hidden'));
 
+            // --- Lógica do Tema ---
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    themeToggleLightIcon.classList.remove('hidden');
+                    themeToggleDarkIcon.classList.add('hidden');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    themeToggleDarkIcon.classList.remove('hidden');
+                    themeToggleLightIcon.classList.add('hidden');
+                }
+            };
+
+            themeToggleButton.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                const newTheme = isDark ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+            
             // --- Inicialização ---
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
             initializeAdmin();
             checkAuth();
             updateSortIcon();
